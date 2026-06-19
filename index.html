@@ -562,15 +562,24 @@ function createCharacterMesh(shirtColor, pantsColor) {
   return group;
 }
 
-/* ---- Terrain physics: rebuilt as a real Trimesh whenever the terrain is
-   sculpted, using the mesh's actual (already world-baked) vertex data. ---- */
+/* ---- Ground physics: start with a reliable flat CANNON.Plane.
+   Only after sculpting do we rebuild as a Trimesh that follows the
+   actual vertex heights. A flat Plane is far more numerically stable
+   for the player capsule and avoids "falling through" bugs. ---- */
+let groundIsFlat = true;
 function rebuildGroundPhysics() {
   if (groundBody) world.removeBody(groundBody);
-  const pos = groundMesh.geometry.attributes.position;
-  const verts = new Float32Array(pos.array); // already world-aligned (rotateX baked in)
-  const idx = groundMesh.geometry.index.array;
-  const shape = new CANNON.Trimesh(verts, idx);
-  groundBody = new CANNON.Body({ mass: 0, shape });
+  if (groundIsFlat) {
+    // Fast and stable: infinite flat plane at y = 0
+    groundBody = new CANNON.Body({ mass: 0, shape: new CANNON.Plane() });
+    groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+  } else {
+    // After sculpting: follow actual vertex heights
+    const pos = groundMesh.geometry.attributes.position;
+    const verts = new Float32Array(pos.array);
+    const idx = groundMesh.geometry.index.array;
+    groundBody = new CANNON.Body({ mass: 0, shape: new CANNON.Trimesh(verts, idx) });
+  }
   world.addBody(groundBody);
 }
 
@@ -713,6 +722,7 @@ function setupEditInteraction() {
 
 function sculptAt(hit) {
   if (!hit) return;
+  groundIsFlat = false; // switch to Trimesh physics after this sculpt session
   const pos = groundMesh.geometry.attributes.position;
   const sign = brushMode === 'raise' ? 1 : -1;
   for (let i = 0; i < pos.count; i++) {
@@ -785,9 +795,35 @@ function setMode(newMode) {
   document.getElementById('edit-toolbar').style.display = editing ? 'flex' : 'none';
   document.getElementById('add-btn').style.display = editing ? 'flex' : 'none';
   document.getElementById('mode-btn').textContent = editing ? '▶ تجربة' : '✎ تطوير';
-  if (!editing) deselectEntry();
-  if (editing) { brushMode = null; document.querySelectorAll('#terrain-tools .tool-chip').forEach(c => c.classList.remove('active')); orbitControls.target.copy(playerMesh.position); }
-  setStatus(editing ? 'وضع التطوير: حدد عنصراً، أو استخدم أدوات نحت التربة.' : 'وضع التجربة: تحكم بالشخصية. اسحب الشاشة لتفعيل ملء الشاشة.');
+
+  if (editing) {
+    // Back to edit: reset orbit target to player position so the scene is centred
+    brushMode = null;
+    document.querySelectorAll('#terrain-tools .tool-chip').forEach(c => c.classList.remove('active'));
+    orbitControls.target.copy(playerMesh.position);
+    orbitControls.update();
+  } else {
+    // Into play mode: SNAP camCurrentPos to the correct third-person position RIGHT NOW.
+    // Without this, camera.position is wherever OrbitControls left it and
+    // the scene appears to "disappear" until lerp slowly catches up.
+    deselectEntry();
+    const px = playerMesh.position.x, py = playerMesh.position.y, pz = playerMesh.position.z;
+    camCurrentPos.set(
+      px - Math.sin(playerYaw) * CAM_DISTANCE,
+      py + CAM_HEIGHT,
+      pz - Math.cos(playerYaw) * CAM_DISTANCE
+    );
+    camera.position.copy(camCurrentPos);
+    camTargetLook.set(px, py + 1.0, pz);
+    camera.lookAt(camTargetLook);
+    // Also make sure the player body is right above the ground (in case it drifted in edit mode)
+    playerBody.position.set(px, Math.max(py, PLAYER_HEIGHT / 2 + 0.1), pz);
+    playerBody.velocity.set(0, 0, 0);
+  }
+
+  setStatus(editing
+    ? 'وضع التطوير: حدد عنصراً أو استخدم أدوات نحت التربة.'
+    : 'وضع التجربة: تحكم بالشخصية. اسحب الشاشة بإصبعين لملء الشاشة.');
 }
 
 /* =====================================================================
@@ -1127,4 +1163,3 @@ document.getElementById('model-file-input').addEventListener('change', (e) => {
 </script>
 </body>
 </html>
-
