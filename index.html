@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Godot Lite Engine — موقع ويب</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0D10; --panel:#101216; --panel2:#15171B;
+    --accent:#E0A93A; --accent-dim:rgba(224,169,58,0.3);
+    --text:#EDEDED; --text-dim:rgba(255,255,255,0.55); --text-faint:rgba(255,255,255,0.3);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;width:100%;overflow:hidden;background:var(--bg);
+    font-family:'Tajawal',sans-serif;color:var(--text);}
+  button{font-family:inherit;cursor:pointer;}
+
+  /* ---------------- Start menu ---------------- */
+  #menu-screen{
+    position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;padding:24px;background:var(--bg);z-index:50;overflow-y:auto;
+  }
+  #menu-screen.hidden{display:none;}
+  .menu-box{width:100%;max-width:420px;}
+  .logo{font-family:'Courier New',monospace;color:var(--accent);font-size:30px;font-weight:700;
+    letter-spacing:1px;margin-bottom:4px;}
+  .tagline{color:var(--text-dim);font-size:13px;margin-bottom:36px;}
+  label.field-label{display:block;font-size:13px;color:var(--text-dim);margin-bottom:8px;}
+  input[type=text], input[type=url]{
+    width:100%;padding:14px 16px;border-radius:8px;border:1px solid var(--accent-dim);
+    background:var(--panel2);color:var(--text);font-size:15px;font-family:inherit;
+  }
+  input[type=text]:focus, input[type=url]:focus{outline:none;border-color:var(--accent);}
+  .btn-primary{
+    width:100%;margin-top:14px;padding:14px;border:none;border-radius:8px;
+    background:var(--accent);color:#000;font-weight:700;font-size:15px;
+  }
+  .recent-title{margin-top:34px;font-size:13px;color:var(--text-dim);margin-bottom:8px;}
+  .recent-item{
+    padding:12px 4px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;
+    align-items:center;gap:10px;cursor:pointer;font-size:14px;
+  }
+  .recent-item:hover{color:var(--accent);}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+
+  /* ---------------- Engine app ---------------- */
+  #app{position:fixed;inset:0;display:none;flex-direction:column;}
+  #app.visible{display:flex;}
+  #topbar{
+    height:52px;flex:0 0 auto;background:var(--panel);display:flex;align-items:center;
+    justify-content:space-between;padding:0 10px;border-bottom:1px solid rgba(255,255,255,0.06);
+    z-index:30;gap:8px;
+  }
+  #project-title{font-size:14px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .icon-btn{
+    width:36px;height:36px;border-radius:50%;border:1px solid var(--accent-dim);
+    background:transparent;color:var(--accent);font-size:18px;display:flex;flex:0 0 auto;
+    align-items:center;justify-content:center;
+  }
+  .icon-btn:hover{background:rgba(224,169,58,0.12);}
+  #mode-btn{
+    border-radius:18px;width:auto;padding:0 14px;font-size:12px;font-weight:700;white-space:nowrap;
+  }
+  #viewport-wrap{flex:1 1 auto;position:relative;}
+  #viewport{position:absolute;inset:0;}
+  canvas{display:block;touch-action:none;}
+
+  #hud{position:absolute;inset:0;pointer-events:none;font-family:'Courier New',monospace;}
+  #joystick-zone{
+    position:absolute;left:24px;bottom:24px;width:130px;height:130px;border-radius:50%;
+    background:rgba(20,22,26,0.45);border:1px solid var(--accent-dim);pointer-events:auto;
+  }
+  #joystick-knob{
+    position:absolute;width:56px;height:56px;border-radius:50%;
+    background:rgba(224,169,58,0.65);left:37px;top:37px;pointer-events:none;
+  }
+  #jump-btn{
+    position:absolute;right:28px;bottom:34px;width:78px;height:78px;border-radius:50%;
+    background:rgba(20,22,26,0.45);border:1px solid var(--accent-dim);color:var(--accent);
+    font-size:12px;display:flex;align-items:center;justify-content:center;
+    pointer-events:auto;user-select:none;
+  }
+
+  /* ---------------- Edit-mode tool docks ---------------- */
+  #edit-toolbar{
+    position:absolute;top:10px;left:10px;right:10px;display:flex;flex-direction:column;
+    gap:8px;pointer-events:none;font-family:'Tajawal',sans-serif;align-items:flex-start;
+  }
+  .tool-chip-row{display:flex;gap:6px;flex-wrap:wrap;pointer-events:auto;}
+  .tool-chip{
+    padding:8px 12px;border-radius:16px;background:rgba(16,18,22,0.85);
+    border:1px solid var(--accent-dim);color:var(--text);font-size:12px;
+  }
+  .tool-chip.active{background:var(--accent);color:#000;border-color:var(--accent);}
+  .tool-chip .x{margin-right:4px;}
+
+  #selection-toolbar{
+    position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:none;
+    gap:6px;background:rgba(16,18,22,0.92);border:1px solid var(--accent-dim);
+    border-radius:14px;padding:8px;pointer-events:auto;
+  }
+  #selection-toolbar.visible{display:flex;}
+  #selection-toolbar button{
+    background:transparent;border:none;color:var(--text);font-size:12px;padding:6px 10px;
+    border-radius:8px;
+  }
+  #selection-toolbar button:hover{background:rgba(255,255,255,0.08);}
+  #selection-toolbar button.danger{color:#e0603a;}
+
+  #statusbar{
+    flex:0 0 auto;background:var(--panel);padding:7px 14px;font-family:'Courier New',monospace;
+    font-size:11px;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    border-top:1px solid rgba(255,255,255,0.06);
+  }
+
+  /* ---------------- Asset panel ---------------- */
+  #asset-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:flex-end;
+    justify-content:center;z-index:60;
+  }
+  #asset-overlay.visible{display:flex;}
+  #asset-panel{
+    width:100%;max-width:560px;max-height:84vh;background:var(--panel);border-radius:16px 16px 0 0;
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  #asset-panel h2{font-size:15px;margin:0;padding:16px;border-bottom:1px solid rgba(255,255,255,0.06);}
+  .section-label{font-size:12px;color:var(--accent);font-weight:700;padding:14px 16px 4px;}
+  .menu-tile{
+    display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:14px;cursor:pointer;
+  }
+  .menu-tile:hover{background:rgba(255,255,255,0.04);}
+  .menu-tile .ic{color:var(--text-dim);font-size:16px;width:20px;text-align:center;}
+  #asset-panel-body{overflow-y:auto;flex:1;}
+
+  .subview{display:none;flex-direction:column;height:100%;}
+  .subview.visible{display:flex;}
+  .subview-header{
+    display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .back-btn{background:none;border:none;color:var(--text);font-size:18px;padding:0;}
+  .grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px;overflow-y:auto;
+  }
+  .grid-item{cursor:pointer;}
+  .grid-item img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:6px;background:#222;display:block;}
+  .grid-item .name{font-size:11px;color:var(--text-dim);margin-top:4px;text-align:center;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .empty-msg{padding:30px;text-align:center;color:var(--text-faint);font-size:13px;}
+  .import-form{padding:18px;display:flex;flex-direction:column;gap:14px;}
+  .import-form .btn-primary{margin-top:0;}
+  .hint{font-size:12px;color:var(--text-faint);line-height:1.6;}
+  .search-row{display:flex;gap:8px;padding:14px 14px 0;}
+  .search-row input{flex:1;padding:10px 12px;border-radius:8px;border:1px solid var(--accent-dim);
+    background:var(--panel2);color:var(--text);font-size:13px;}
+  .search-row button{padding:10px 14px;border-radius:8px;border:none;background:var(--accent);color:#000;font-weight:700;font-size:13px;}
+
+  #loading-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;
+    justify-content:center;z-index:80;font-family:'Courier New',monospace;color:var(--accent);
+  }
+  #loading-overlay.visible{display:flex;}
+</style>
+</head>
+<body>
+
+<!-- ============ Start menu (no login) ============ -->
+<div id="menu-screen">
+  <div class="menu-box">
+    <div class="logo">Godot Lite Engine</div>
+    <div class="tagline">محرك 3D خفيف — وضع تطوير (كاميرا حرة 360°، تحديد/نقل/رفع العناصر، نحت التربة) ووضع تجربة (تحكم شخص ثالث).</div>
+    <label class="field-label">اسم المشروع</label>
+    <input id="project-name-input" type="text" placeholder="مثال: مدينتي الأولى" />
+    <button class="btn-primary" id="start-btn">ابدأ التطوير</button>
+    <div id="recent-wrap" style="display:none;">
+      <div class="recent-title">مشاريع سابقة</div>
+      <div id="recent-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Engine app ============ -->
+<div id="app">
+  <div id="topbar">
+    <button class="icon-btn" id="add-btn">+</button>
+    <div id="project-title"></div>
+    <button class="icon-btn" id="mode-btn">✎ تطوير</button>
+  </div>
+  <div id="viewport-wrap">
+    <div id="viewport"></div>
+
+    <div id="edit-toolbar">
+      <div class="tool-chip-row" id="terrain-tools">
+        <div class="tool-chip" data-brush="raise">⬆ رفع التربة</div>
+        <div class="tool-chip" data-brush="lower">⬇ حفر / خفض</div>
+        <div class="tool-chip" data-brush="none"><span class="x">✕</span>إيقاف النحت</div>
+      </div>
+    </div>
+
+    <div id="selection-toolbar">
+      <button data-act="move">↔ نقل</button>
+      <button data-act="up">⬆ رفع</button>
+      <button data-act="down">⬇ خفض</button>
+      <button data-act="delete" class="danger">🗑 حذف</button>
+      <button data-act="deselect">إغلاق</button>
+    </div>
+
+    <div id="hud">
+      <div id="joystick-zone"><div id="joystick-knob"></div></div>
+      <div id="jump-btn">قفز</div>
+    </div>
+  </div>
+  <div id="statusbar">جاري التحميل…</div>
+</div>
+
+<!-- ============ Asset panel ============ -->
+<div id="asset-overlay">
+  <div id="asset-panel">
+    <h2>إضافة عنصر</h2>
+    <div id="asset-panel-body">
+
+      <div class="subview visible" id="view-root">
+        <div class="section-label">أرضية</div>
+        <div class="menu-tile" data-go="view-ph-floor"><span class="ic">▦</span> أرضية من Poly Haven</div>
+        <div class="menu-tile" data-go="view-acg-floor"><span class="ic">▦</span> أرضية من AmbientCG</div>
+        <div class="section-label">بيئة</div>
+        <div class="menu-tile" id="add-water-btn"><span class="ic">≈</span> إضافة بحر / ماء</div>
+        <div class="section-label">نماذج (خيوانات / بيوت / عناصر)</div>
+        <div class="menu-tile" id="add-character-btn"><span class="ic">☻</span> إضافة شخصية بسيطة</div>
+        <div class="menu-tile" data-go="view-rpm"><span class="ic">👤</span> شخصية من Ready Player Me (أفاتار شخصي)</div>
+        <div class="menu-tile" data-go="view-ph-model"><span class="ic">◆</span> نموذج من Poly Haven (أشجار، صخور، أثاث…)</div>
+        <div class="menu-tile" data-go="view-ph-model-nature"><span class="ic">🌿</span> نباتات وطبيعة — Poly Haven</div>
+        <div class="menu-tile" data-go="view-ph-model-urban"><span class="ic">🏛</span> مباني وأثاث — Poly Haven</div>
+        <div class="menu-tile" data-go="view-sketchfab-model"><span class="ic">◇</span> نموذج من Sketchfab</div>
+        <div class="menu-tile" data-go="view-url-model"><span class="ic">⇗</span> استيراد من رابط مباشر (.glb/.gltf)</div>
+        <div class="menu-tile" data-go="view-file-model"><span class="ic">⇧</span> استيراد ملف GLB من جهازك (Mixamo / Sketchfab / Free3D)</div>
+      </div>
+
+      <div class="subview" id="view-ph-floor">
+        <div class="subview-header"><button class="back-btn" data-back>→</button> أرضية من Poly Haven</div>
+        <div class="grid" id="grid-ph-floor"></div>
+      </div>
+
+      <div class="subview" id="view-acg-floor">
+        <div class="subview-header"><button class="back-btn" data-back>→</button> أرضية من AmbientCG</div>
+        <div class="grid" id="grid-acg-floor"></div>
+      </div>
+
+      <div class="subview" id="view-ph-model">
+        <div class="subview-header"><button class="back-btn" data-back>→</button> نماذج Poly Haven — الكل</div>
+        <div class="grid" id="grid-ph-model"></div>
+      </div>
+
+      <div class="subview" id="view-ph-model-nature">
+        <div class="subview-header"><button class="back-btn" data-back>→</button> نباتات وطبيعة</div>
+        <div class="grid" id="grid-ph-model-nature"></div>
+      </div>
+
+      <div class="subview" id="view-ph-model-urban">
+        <div class="subview-header"><button class="back-btn" data-back>→</button> مباني وأثاث</div>
+        <div class="grid" id="grid-ph-model-urban"></div>
+      </div>
+
+      <div class="subview" id="view-rpm">
+        <div class="subview-header"><button class="back-btn" data-back>→</button> شخصية من Ready Player Me</div>
+        <div class="import-form">
+          <div class="hint" style="margin-bottom:4px;">Ready Player Me تتيح إنشاء أفاتار شخصي مجاناً وتحميله مباشرة كـ GLB. انقر الزر أدناه لفتح منشئ الأفاتار، أنشئ شخصيتك، ثم انسخ رابط GLB وضعه في الخانة.</div>
+          <button class="btn-primary" id="rpm-open-btn" style="margin-top:0;">🎨 افتح منشئ الأفاتار</button>
+          <label class="field-label" style="margin-top:14px;">أو الصق رابط GLB المنسوخ من Ready Player Me:</label>
+          <input type="url" id="rpm-url-input" placeholder="https://models.readyplayer.me/....glb" />
+          <button class="btn-primary" id="rpm-add-btn">إضافة الشخصية</button>
+        </div>
+      </div>
+
+      <div class="subview" id="view-sketchfab-model">
+        <div class="subview-header"><button class="back-btn" data-back>→</button> نموذج من Sketchfab</div>
+        <div class="hint" style="padding:12px 16px 0;">التصفح هنا حرّ بدون تسجيل. لكن تحميل نموذج فعلياً يتطلب تسجيل دخول لمرة واحدة في موقع Sketchfab نفسه (ليس في موقعنا) — هذا شرط من Sketchfab نفسها لتتبع الترخيص، خارج عن سيطرتنا.</div>
+        <div class="search-row">
+          <input type="text" id="sketchfab-search-input" placeholder="ابحث عن نموذج… مثال: house, car, tree" />
+          <button id="sketchfab-search-btn">بحث</button>
+        </div>
+        <div class="grid" id="grid-sketchfab-model"></div>
+      </div>
+
+      <div class="subview" id="view-url-model">
+        <div class="subview-header"><button class="back-btn" data-back>→</button> استيراد من رابط</div>
+        <div class="import-form">
+          <input type="url" id="model-url-input" placeholder="رابط مباشر لملف .glb أو .gltf" />
+          <button class="btn-primary" id="model-url-add-btn">استيراد</button>
+          <div class="hint">يعمل مع أي رابط مباشر لملف GLB/GLTF — مثلاً نموذج رفعته بنفسك على أي استضافة.</div>
+        </div>
+      </div>
+
+      <div class="subview" id="view-file-model">
+        <div class="subview-header"><button class="back-btn" data-back>→</button> استيراد ملف من الجهاز</div>
+        <div class="import-form">
+          <input type="file" id="model-file-input" accept=".glb" />
+          <div class="hint">صدّر النموذج كملف GLB من Mixamo أو Sketchfab أو Free3D (تصدير يدوي من موقعهم)، ثم اخترهُ هنا. سيُضاف تلقائياً مع تصادم فيزيائي.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="loading-overlay">جاري المعالجة…</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/",
+    "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "fflate": "https://esm.sh/fflate@0.8.2"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as CANNON from 'cannon-es';
+import { createClient } from '@supabase/supabase-js';
+import { unzipSync } from 'fflate';
+
+/* =====================================================================
+   0) Supabase (no-login project storage)
+   ===================================================================== */
+const supabase = createClient(
+  'https://ficxjjiilvvklpkuojbd.supabase.co',
+  'sb_publishable_2A5gqdoKRzExTurAuo5OgA_PuPUbh1l'
+);
+async function saveProject(name) { try { await supabase.from('projects').insert({ name }); } catch (_) {} }
+async function listProjects() {
+  try {
+    const { data, error } = await supabase.from('projects').select('name').order('created_at', { ascending:false }).limit(30);
+    if (error) return [];
+    return (data || []).map(r => r.name);
+  } catch (_) { return []; }
+}
+
+/* =====================================================================
+   1) Start menu
+   ===================================================================== */
+const menuScreen = document.getElementById('menu-screen');
+const app = document.getElementById('app');
+const projectNameInput = document.getElementById('project-name-input');
+const recentWrap = document.getElementById('recent-wrap');
+const recentList = document.getElementById('recent-list');
+const projectTitleEl = document.getElementById('project-title');
+let engineStarted = false;
+
+function openProject(rawName) {
+  const name = (rawName || '').trim() || 'مشروع بدون اسم';
+  saveProject(name);
+  projectTitleEl.textContent = name;
+  menuScreen.classList.add('hidden');
+  app.classList.add('visible');
+  if (!engineStarted) { engineStarted = true; startEngine(); }
+}
+document.getElementById('start-btn').addEventListener('click', () => openProject(projectNameInput.value));
+projectNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') openProject(projectNameInput.value); });
+listProjects().then(names => {
+  if (names.length === 0) return;
+  recentWrap.style.display = 'block';
+  for (const n of names) {
+    const item = document.createElement('div');
+    item.className = 'recent-item';
+    item.innerHTML = `<span class="dot"></span><span>${n}</span>`;
+    item.addEventListener('click', () => openProject(n));
+    recentList.appendChild(item);
+  }
+});
+
+/* =====================================================================
+   2) Engine core
+   ===================================================================== */
+const statusEl = document.getElementById('statusbar');
+function setStatus(msg) { statusEl.textContent = msg; }
+function showLoading(show) { document.getElementById('loading-overlay').classList.toggle('visible', show); }
+
+let scene, camera, renderer, world, groundMesh, groundBody, playerMesh, playerBody, orbitControls;
+let playerYaw = 0, grounded = false;
+const camCurrentPos = new THREE.Vector3();
+const camTargetLook = new THREE.Vector3();
+const GROUND_SIZE = 800;       // a deliberately large baseplate — room to actually build in
+const GROUND_SEGMENTS = 100;   // ~8m per vertex; sculpting resolution vs mobile perf trade-off
+const PLAYER_RADIUS = 0.35, PLAYER_HEIGHT = 1.7;
+const CAM_DISTANCE = 5.2, CAM_HEIGHT = 2.4;
+const keys = { w:false, a:false, s:false, d:false };
+let moveVec = { x:0, y:0 };
+const gltfLoader = new GLTFLoader();
+let spawnCursor = 0;
+let mode = 'edit'; // 'edit' | 'play'  — opens in edit/dev mode by default
+const placedObjects = []; // { mesh, body, kind } for every object the user can select/move/delete
+let selectedEntry = null;
+let selectionBoxHelper = null;
+let brushMode = null;     // null | 'raise' | 'lower'
+const BRUSH_RADIUS = 10, BRUSH_STRENGTH = 1.4;
+let terrainDirty = false; // rebuild physics trimesh once when the user finishes a sculpt drag
+
+function startEngine() {
+  const viewport = document.getElementById('viewport');
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x9fb4c7);
+  scene.fog = new THREE.Fog(0x9fb4c7, 60, 320);
+
+  camera = new THREE.PerspectiveCamera(65, viewport.clientWidth / viewport.clientHeight, 0.1, 2000);
+
+  renderer = new THREE.WebGLRenderer({ antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  viewport.appendChild(renderer.domElement);
+
+  window.addEventListener('resize', () => {
+    camera.aspect = viewport.clientWidth / viewport.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+  });
+
+  scene.add(new THREE.HemisphereLight(0xddeeff, 0x445544, 0.9));
+  const sun = new THREE.DirectionalLight(0xfff3df, 1.4);
+  sun.position.set(60, 90, 30);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -120; sun.shadow.camera.right = 120;
+  sun.shadow.camera.top = 120; sun.shadow.camera.bottom = -120;
+  sun.shadow.camera.far = 400;
+  scene.add(sun);
+
+  world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
+  world.defaultContactMaterial.friction = 0.4;
+  world.broadphase = new CANNON.SAPBroadphase(world);
+
+  // Ground geometry is "baked" flat into world-space XZ (rotateX bakes the
+  // rotation into the vertex data once), so afterwards position.y on each
+  // vertex IS the terrain height directly — this makes sculpting math trivial
+  // and keeps the physics Trimesh trivially in sync (no rotation mismatch).
+  const groundGeo = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE, GROUND_SEGMENTS, GROUND_SEGMENTS);
+  groundGeo.rotateX(-Math.PI / 2);
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0x6b7560, roughness: 1.0 });
+  groundMesh = new THREE.Mesh(groundGeo, groundMat);
+  groundMesh.receiveShadow = true;
+  scene.add(groundMesh);
+
+  const grid = new THREE.GridHelper(GROUND_SIZE, GROUND_SIZE / 10, 0x000000, 0x000000);
+  grid.material.opacity = 0.06; grid.material.transparent = true; grid.position.y = 0.01;
+  scene.add(grid);
+
+  rebuildGroundPhysics();
+
+  playerMesh = createCharacterMesh(0x3da9fc, 0xE0A93A);
+  playerMesh.position.set(0, 2, 0);
+  scene.add(playerMesh);
+
+  const playerShape = new CANNON.Cylinder(PLAYER_RADIUS, PLAYER_RADIUS, PLAYER_HEIGHT, 8);
+  playerBody = new CANNON.Body({ mass:70, shape:playerShape, fixedRotation:true });
+  playerBody.linearDamping = 0.92;
+  playerBody.position.set(0, PLAYER_HEIGHT/2 + 2, 0);
+  world.addBody(playerBody);
+
+  camCurrentPos.set(0, CAM_HEIGHT, CAM_DISTANCE);
+  camera.position.set(0, 10, 16);
+
+  orbitControls = new OrbitControls(camera, renderer.domElement);
+  orbitControls.enableDamping = true;
+  orbitControls.minDistance = 2; orbitControls.maxDistance = 400;
+  orbitControls.target.set(0, 1, 0);
+
+  setupInput();
+  setupEditInteraction();
+  setMode('edit');
+
+  const clock = new THREE.Clock();
+  function step() {
+    const dt = Math.min(clock.getDelta(), 0.05);
+
+    if (mode === 'play') {
+      updatePlayerMovement(dt);
+      world.step(1/60, dt, 3);
+      grounded = playerBody.position.y <= (PLAYER_HEIGHT/2 + 0.08) || Math.abs(playerBody.velocity.y) < 0.05;
+      playerMesh.position.copy(playerBody.position);
+      playerMesh.rotation.y = playerYaw;
+      updateThirdPersonCamera(dt);
+    } else {
+      world.step(1/60, dt, 3); // keep physics live so dropped/placed objects still settle
+      orbitControls.update();
+    }
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+  setStatus('وضع التطوير: اضغط + لإضافة عناصر، أو اضغط على أي عنصر لتحديده.');
+}
+
+function updatePlayerMovement(dt) {
+  let forward = 0, strafe = 0;
+  if (keys.w) forward += 1;
+  if (keys.s) forward -= 1;
+  if (keys.d) strafe += 1;
+  if (keys.a) strafe -= 1;
+  if (Math.abs(moveVec.x) > 0.05 || Math.abs(moveVec.y) > 0.05) { forward += -moveVec.y; strafe += moveVec.x; }
+  forward = Math.max(-1, Math.min(1, forward));
+  strafe = Math.max(-1, Math.min(1, strafe));
+
+  if (forward !== 0 || strafe !== 0) {
+    // Fixed target angle from input only (not relative to playerYaw) — avoids
+    // a feedback loop where a rotating reference frame could spin the player.
+    const desiredYaw = Math.atan2(strafe, forward);
+    let diff = Math.atan2(Math.sin(desiredYaw - playerYaw), Math.cos(desiredYaw - playerYaw));
+    playerYaw += diff * Math.min(1, 3.0 * dt);
+    playerBody.velocity.x = Math.sin(playerYaw) * 4.2;
+    playerBody.velocity.z = Math.cos(playerYaw) * 4.2;
+  } else {
+    playerBody.velocity.x *= 0.8;
+    playerBody.velocity.z *= 0.8;
+  }
+}
+function updateThirdPersonCamera(dt) {
+  const desired = new THREE.Vector3(
+    playerMesh.position.x - Math.sin(playerYaw) * CAM_DISTANCE,
+    playerMesh.position.y + CAM_HEIGHT,
+    playerMesh.position.z - Math.cos(playerYaw) * CAM_DISTANCE
+  );
+  camCurrentPos.lerp(desired, 1 - Math.pow(0.0001, dt));
+  camera.position.copy(camCurrentPos);
+  camTargetLook.set(playerMesh.position.x, playerMesh.position.y + 1.0, playerMesh.position.z);
+  camera.lookAt(camTargetLook);
+}
+
+/* ---- A simple low-poly placeholder humanoid (used for the player AND as a
+   placeable "3D character" prop) — no external model dependency needed. ---- */
+function createCharacterMesh(shirtColor, pantsColor) {
+  const group = new THREE.Group();
+  const skin = new THREE.MeshStandardMaterial({ color: 0xd8a878, roughness: 0.7 });
+  const shirt = new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.6 });
+  const pants = new THREE.MeshStandardMaterial({ color: pantsColor, roughness: 0.6 });
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 16), skin);
+  head.position.y = 1.5; head.castShadow = true; group.add(head);
+
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.26, 0.55, 4, 10), shirt);
+  torso.position.y = 1.05; torso.castShadow = true; group.add(torso);
+
+  const legGeo = new THREE.CapsuleGeometry(0.12, 0.6, 4, 8);
+  for (const side of [-1, 1]) {
+    const leg = new THREE.Mesh(legGeo, pants);
+    leg.position.set(side * 0.13, 0.4, 0); leg.castShadow = true; group.add(leg);
+  }
+  const armGeo = new THREE.CapsuleGeometry(0.09, 0.5, 4, 8);
+  for (const side of [-1, 1]) {
+    const arm = new THREE.Mesh(armGeo, skin);
+    arm.position.set(side * 0.38, 1.05, 0); arm.castShadow = true; group.add(arm);
+  }
+  return group;
+}
+
+/* ---- Terrain physics: rebuilt as a real Trimesh whenever the terrain is
+   sculpted, using the mesh's actual (already world-baked) vertex data. ---- */
+function rebuildGroundPhysics() {
+  if (groundBody) world.removeBody(groundBody);
+  const pos = groundMesh.geometry.attributes.position;
+  const verts = new Float32Array(pos.array); // already world-aligned (rotateX baked in)
+  const idx = groundMesh.geometry.index.array;
+  const shape = new CANNON.Trimesh(verts, idx);
+  groundBody = new CANNON.Body({ mass: 0, shape });
+  world.addBody(groundBody);
+}
+
+function setupInput() {
+  window.addEventListener('keydown', (e) => { const k = e.key.toLowerCase(); if (k in keys) keys[k] = true; if (k === ' ') tryJump(); });
+  window.addEventListener('keyup', (e) => { const k = e.key.toLowerCase(); if (k in keys) keys[k] = false; });
+
+  const zone = document.getElementById('joystick-zone');
+  const knob = document.getElementById('joystick-knob');
+  let joyActive = false, joyId = null, joyCenter = { x:0, y:0 };
+  function joyStart(id, x, y) { joyActive = true; joyId = id; const r = zone.getBoundingClientRect(); joyCenter = { x:r.left+r.width/2, y:r.top+r.height/2 }; joyMove(x,y); }
+  function joyMove(x, y) {
+    const maxR = 50; let dx = x - joyCenter.x, dy = y - joyCenter.y;
+    const dist = Math.min(Math.hypot(dx,dy), maxR); const ang = Math.atan2(dy,dx);
+    dx = Math.cos(ang)*dist; dy = Math.sin(ang)*dist;
+    knob.style.left = (37+dx)+'px'; knob.style.top = (37+dy)+'px';
+    moveVec.x = dx/maxR; moveVec.y = dy/maxR;
+  }
+  function joyEnd() { joyActive = false; joyId = null; moveVec = {x:0,y:0}; knob.style.left='37px'; knob.style.top='37px'; }
+  zone.addEventListener('touchstart', (e) => { const t=e.changedTouches[0]; joyStart(t.identifier,t.clientX,t.clientY); e.preventDefault(); }, {passive:false});
+  zone.addEventListener('touchmove', (e) => { for (const t of e.changedTouches) if (t.identifier===joyId) joyMove(t.clientX,t.clientY); e.preventDefault(); }, {passive:false});
+  zone.addEventListener('touchend', (e) => { for (const t of e.changedTouches) if (t.identifier===joyId) joyEnd(); }, {passive:false});
+  zone.addEventListener('mousedown', (e) => joyStart('mouse', e.clientX, e.clientY));
+  window.addEventListener('mousemove', (e) => { if (joyActive && joyId==='mouse') joyMove(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', () => { if (joyId==='mouse') joyEnd(); });
+
+  const jumpBtn = document.getElementById('jump-btn');
+  jumpBtn.addEventListener('touchstart', (e) => { tryJump(); e.preventDefault(); }, {passive:false});
+  jumpBtn.addEventListener('mousedown', tryJump);
+
+  // Play-mode only: swipe in any direction toggles fullscreen.
+  const viewportWrap = document.getElementById('viewport-wrap');
+  let fsStart = null;
+  viewportWrap.addEventListener('touchstart', (e) => {
+    if (mode !== 'play') return;
+    if (e.target.closest('#joystick-zone, #jump-btn')) return;
+    const t = e.touches[0]; fsStart = { x:t.clientX, y:t.clientY };
+  }, { passive:true });
+  viewportWrap.addEventListener('touchend', (e) => {
+    if (mode !== 'play' || !fsStart) return;
+    const t = e.changedTouches[0];
+    const dist = Math.hypot(t.clientX - fsStart.x, t.clientY - fsStart.y);
+    fsStart = null;
+    if (dist > 70) toggleFullscreen();
+  }, { passive:true });
+}
+function tryJump() { if (mode === 'play' && grounded) { playerBody.velocity.y = 5.2; grounded = false; } }
+function toggleFullscreen() {
+  try {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  } catch (_) { setStatus('ملء الشاشة غير مدعوم على هذا المتصفح.'); }
+}
+
+/* =====================================================================
+   3) Edit mode: selection, move/lift/delete, terrain sculpting
+   ===================================================================== */
+function setupEditInteraction() {
+  const canvas = renderer.domElement;
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  let dragging = false; // dragging a selected object across the ground
+
+  function setPointer(e) {
+    const r = canvas.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX);
+    const y = (e.touches ? e.touches[0].clientY : e.clientY);
+    pointer.x = ((x - r.left) / r.width) * 2 - 1;
+    pointer.y = -((y - r.top) / r.height) * 2 + 1;
+  }
+  function groundHit() {
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObject(groundMesh, false);
+    return hits[0] || null;
+  }
+  function objectHit() {
+    raycaster.setFromCamera(pointer, camera);
+    const meshes = placedObjects.map(o => o.mesh);
+    const hits = raycaster.intersectObjects(meshes, true);
+    if (!hits.length) return null;
+    let obj = hits[0].object;
+    while (obj && !obj.userData.rootEntry) obj = obj.parent;
+    return obj ? { entry: obj.userData.rootEntry, point: hits[0].point } : null;
+  }
+
+  function onDown(e) {
+    if (mode !== 'edit') return;
+    if (e.target.closest('#selection-toolbar, #edit-toolbar')) return;
+    setPointer(e);
+
+    if (brushMode) { sculptAt(groundHit()); dragging = true; return; }
+
+    if (selectedEntry && selectedEntry.moving) {
+      const hit = groundHit();
+      if (hit) placeEntryAt(selectedEntry, hit.point);
+      dragging = true;
+      return;
+    }
+    const hit = objectHit();
+    selectEntry(hit ? hit.entry : null);
+  }
+  function onMove(e) {
+    if (mode !== 'edit' || !dragging) return;
+    setPointer(e);
+    if (brushMode) { sculptAt(groundHit()); return; }
+    if (selectedEntry && selectedEntry.moving) { const hit = groundHit(); if (hit) placeEntryAt(selectedEntry, hit.point); }
+  }
+  function onUp() {
+    if (dragging && brushMode) { rebuildGroundPhysics(); }
+    dragging = false;
+  }
+  canvas.addEventListener('mousedown', onDown);
+  canvas.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+  canvas.addEventListener('touchstart', (e) => { onDown(e); }, { passive:true });
+  canvas.addEventListener('touchmove', (e) => { onMove(e); }, { passive:true });
+  canvas.addEventListener('touchend', onUp, { passive:true });
+
+  document.querySelectorAll('#terrain-tools .tool-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      brushMode = chip.dataset.brush === 'none' ? null : chip.dataset.brush;
+      document.querySelectorAll('#terrain-tools .tool-chip').forEach(c => c.classList.remove('active'));
+      if (brushMode) chip.classList.add('active');
+      if (brushMode) { deselectEntry(); setStatus(brushMode === 'raise' ? 'اسحب على الأرض لرفع التربة.' : 'اسحب على الأرض لحفر/خفض التربة.'); }
+    });
+  });
+
+  document.querySelectorAll('#selection-toolbar button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!selectedEntry) return;
+      const act = btn.dataset.act;
+      if (act === 'move') { selectedEntry.moving = !selectedEntry.moving; btn.style.color = selectedEntry.moving ? 'var(--accent)' : ''; setStatus(selectedEntry.moving ? 'اضغط على الأرض لنقل العنصر إلى هناك.' : 'تم إيقاف وضع النقل.'); }
+      else if (act === 'up') liftEntry(selectedEntry, 0.3);
+      else if (act === 'down') liftEntry(selectedEntry, -0.3);
+      else if (act === 'delete') deleteEntry(selectedEntry);
+      else if (act === 'deselect') deselectEntry();
+    });
+  });
+}
+
+function sculptAt(hit) {
+  if (!hit) return;
+  const pos = groundMesh.geometry.attributes.position;
+  const sign = brushMode === 'raise' ? 1 : -1;
+  for (let i = 0; i < pos.count; i++) {
+    const vx = pos.getX(i), vz = pos.getZ(i);
+    const d = Math.hypot(vx - hit.point.x, vz - hit.point.z);
+    if (d > BRUSH_RADIUS) continue;
+    const falloff = 1 - (d / BRUSH_RADIUS);
+    pos.setY(i, pos.getY(i) + sign * BRUSH_STRENGTH * falloff * 0.12);
+  }
+  pos.needsUpdate = true;
+  groundMesh.geometry.computeVertexNormals();
+}
+
+function registerEntry(mesh, body, kind) {
+  const entry = { mesh, body, kind, moving: false };
+  mesh.userData.rootEntry = entry;
+  mesh.traverse(c => { c.userData.rootEntry = entry; });
+  placedObjects.push(entry);
+  return entry;
+}
+function selectEntry(entry) {
+  deselectEntry();
+  if (!entry) return;
+  selectedEntry = entry;
+  selectionBoxHelper = new THREE.BoxHelper(entry.mesh, 0xE0A93A);
+  scene.add(selectionBoxHelper);
+  document.getElementById('selection-toolbar').classList.add('visible');
+}
+function deselectEntry() {
+  if (selectionBoxHelper) { scene.remove(selectionBoxHelper); selectionBoxHelper = null; }
+  if (selectedEntry) selectedEntry.moving = false;
+  selectedEntry = null;
+  document.getElementById('selection-toolbar').classList.remove('visible');
+}
+function placeEntryAt(entry, point) {
+  const box = new THREE.Box3().setFromObject(entry.mesh);
+  const halfHeight = (box.max.y - box.min.y) / 2;
+  entry.mesh.position.set(point.x, point.y + halfHeight, point.z);
+  if (selectionBoxHelper) selectionBoxHelper.update();
+  syncEntryBody(entry);
+}
+function liftEntry(entry, delta) {
+  entry.mesh.position.y += delta;
+  if (selectionBoxHelper) selectionBoxHelper.update();
+  syncEntryBody(entry);
+}
+function syncEntryBody(entry) {
+  if (!entry.body) return; // water has no physics body
+  world.removeBody(entry.body);
+  entry.body = makeAutoColliderBody(entry.mesh);
+  entry.body.userData = { entry };
+  world.addBody(entry.body);
+}
+function deleteEntry(entry) {
+  scene.remove(entry.mesh);
+  if (entry.body) world.removeBody(entry.body);
+  const i = placedObjects.indexOf(entry);
+  if (i >= 0) placedObjects.splice(i, 1);
+  deselectEntry();
+  setStatus('تم حذف العنصر.');
+}
+
+document.getElementById('mode-btn').addEventListener('click', () => setMode(mode === 'edit' ? 'play' : 'edit'));
+function setMode(newMode) {
+  mode = newMode;
+  const editing = mode === 'edit';
+  orbitControls.enabled = editing;
+  document.getElementById('joystick-zone').style.display = editing ? 'none' : 'block';
+  document.getElementById('jump-btn').style.display = editing ? 'none' : 'block';
+  document.getElementById('edit-toolbar').style.display = editing ? 'flex' : 'none';
+  document.getElementById('add-btn').style.display = editing ? 'flex' : 'none';
+  document.getElementById('mode-btn').textContent = editing ? '▶ تجربة' : '✎ تطوير';
+  if (!editing) deselectEntry();
+  if (editing) { brushMode = null; document.querySelectorAll('#terrain-tools .tool-chip').forEach(c => c.classList.remove('active')); orbitControls.target.copy(playerMesh.position); }
+  setStatus(editing ? 'وضع التطوير: حدد عنصراً، أو استخدم أدوات نحت التربة.' : 'وضع التجربة: تحكم بالشخصية. اسحب الشاشة لتفعيل ملء الشاشة.');
+}
+
+/* =====================================================================
+   4) Engine API: ground texture + model import + water + character
+   ===================================================================== */
+function setGroundTexture(url, realTileSizeMeters) {
+  const tileSize = (realTileSizeMeters && realTileSizeMeters > 0.05) ? realTileSizeMeters : 2.0;
+  const loader = new THREE.TextureLoader();
+  loader.setCrossOrigin('anonymous');
+  loader.load(url, (tex) => {
+    tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+    const repeats = GROUND_SIZE / tileSize;
+    tex.repeat.set(repeats, repeats);
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    tex.colorSpace = THREE.SRGBColorSpace;
+    groundMesh.material.map = tex; groundMesh.material.color.set(0xffffff);
+    groundMesh.material.needsUpdate = true;
+    setStatus('تم تطبيق الأرضية بشكل حقيقي (تكرار غير مشوّه).');
+  }, undefined, () => setStatus('فشل تحميل تكستشر الأرضية.'));
+}
+
+function nextSpawnPosition() {
+  spawnCursor += 1;
+  const angle = spawnCursor * 0.9;
+  const radius = 4 + spawnCursor * 1.6;
+  return new THREE.Vector3(playerMesh.position.x + Math.cos(angle)*radius, 0.05, playerMesh.position.z + Math.sin(angle)*radius);
+}
+function makeAutoColliderBody(object3d) {
+  const box = new THREE.Box3().setFromObject(object3d);
+  const size = new THREE.Vector3(); box.getSize(size);
+  const center = new THREE.Vector3(); box.getCenter(center);
+  size.x = Math.max(size.x, 0.05); size.y = Math.max(size.y, 0.05); size.z = Math.max(size.z, 0.05);
+  const body = new CANNON.Body({ mass:0, shape:new CANNON.Box(new CANNON.Vec3(size.x/2, size.y/2, size.z/2)) });
+  body.position.set(center.x, center.y, center.z);
+  return body;
+}
+function finalizeImportedObject(object3d, label) {
+  const spawn = nextSpawnPosition();
+  const box = new THREE.Box3().setFromObject(object3d);
+  const size = new THREE.Vector3(); box.getSize(size);
+  object3d.position.set(spawn.x, spawn.y + size.y/2, spawn.z);
+  object3d.traverse((c) => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+  scene.add(object3d);
+  const body = makeAutoColliderBody(object3d);
+  world.addBody(body);
+  registerEntry(object3d, body, 'model');
+  setStatus(`تمت إضافة "${label}" مع تصادم تلقائي. اضغط عليه لتحديده/نقله.`);
+}
+function addModelFromUrl(url, label) {
+  setStatus(`جاري تحميل ${label || 'النموذج'}…`);
+  gltfLoader.load(url, (gltf) => finalizeImportedObject(gltf.scene, label || 'نموذج'),
+    undefined, () => setStatus('فشل تحميل النموذج. تحقق أن الرابط مباشر لملف glb/gltf صالح.'));
+}
+function addModelFromArrayBuffer(buffer, label) {
+  setStatus(`جاري معالجة ${label || 'الملف'}…`);
+  gltfLoader.parse(buffer, '', (gltf) => finalizeImportedObject(gltf.scene, label || 'نموذج مستورد'),
+    () => setStatus('تعذر قراءة الملف. تأكد أنه GLB صالح.'));
+}
+function addWater() {
+  const geo = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE);
+  geo.rotateX(-Math.PI/2);
+  const mat = new THREE.MeshStandardMaterial({ color:0x2f74a8, transparent:true, opacity:0.78, roughness:0.25, metalness:0.1 });
+  const water = new THREE.Mesh(geo, mat);
+  water.position.y = 0.4; // adjustable afterward via select + رفع/خفض
+  scene.add(water);
+  registerEntry(water, null, 'water'); // no physics body — visual only for now
+  setStatus('تمت إضافة الماء. حدده ثم استخدم رفع/خفض لتعديل مستوى سطح البحر.');
+}
+function addCharacter() {
+  const ch = createCharacterMesh(0x6b6b6b, 0x2b2b2b);
+  const spawn = nextSpawnPosition();
+  ch.position.set(spawn.x, 0, spawn.z);
+  ch.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+  scene.add(ch);
+  const body = makeAutoColliderBody(ch);
+  world.addBody(body);
+  registerEntry(ch, body, 'character');
+  setStatus('تمت إضافة شخصية 3D. حدّدها لنقلها أو رفعها.');
+}
+
+/* =====================================================================
+   5) Asset panel: Poly Haven / AmbientCG / Sketchfab / URL / device file
+   ===================================================================== */
+const overlay = document.getElementById('asset-overlay');
+document.getElementById('add-btn').addEventListener('click', () => { overlay.classList.add('visible'); showView('view-root'); });
+overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('visible'); });
+document.getElementById('add-water-btn').addEventListener('click', () => { overlay.classList.remove('visible'); addWater(); });
+document.getElementById('add-character-btn').addEventListener('click', () => { overlay.classList.remove('visible'); addCharacter(); });
+
+// Ready Player Me
+document.getElementById('rpm-open-btn').addEventListener('click', () => {
+  window.open('https://demo.readyplayer.me/avatar?frameApi', '_blank');
+  setStatus('أنشئ أفاتارك في النافذة الجديدة، ثم انسخ رابط GLB وألصقه في الخانة.');
+});
+document.getElementById('rpm-add-btn').addEventListener('click', () => {
+  let url = document.getElementById('rpm-url-input').value.trim();
+  if (!url) { setStatus('الصق رابط GLB من Ready Player Me أولاً.'); return; }
+  // RPM GLBs support morphTargets for expressions; add ?morphTargets=ARKit for best quality
+  if (!url.includes('morphTargets')) url += (url.includes('?') ? '&' : '?') + 'morphTargets=ARKit&lod=0';
+  overlay.classList.remove('visible');
+  addModelFromUrl(url, 'Ready Player Me Avatar');
+});
+
+function showView(id) {
+  document.querySelectorAll('.subview').forEach(v => v.classList.remove('visible'));
+  document.getElementById(id).classList.add('visible');
+}
+document.querySelectorAll('[data-go]').forEach(el => el.addEventListener('click', () => {
+  showView(el.dataset.go);
+  if (el.dataset.go === 'view-ph-floor') loadPolyHavenFloors();
+  if (el.dataset.go === 'view-acg-floor') loadAmbientCGFloors();
+  if (el.dataset.go === 'view-ph-model') loadPolyHavenModels('grid-ph-model', null);
+  if (el.dataset.go === 'view-ph-model-nature') loadPolyHavenModels('grid-ph-model-nature', 'nature');
+  if (el.dataset.go === 'view-ph-model-urban') loadPolyHavenModels('grid-ph-model-urban', 'urban');
+  if (el.dataset.go === 'view-rpm') { /* static panel, no load needed */ }
+  if (el.dataset.go === 'view-sketchfab-model') searchSketchfab(document.getElementById('sketchfab-search-input').value || 'house');
+}));
+document.querySelectorAll('[data-back]').forEach(el => el.addEventListener('click', () => showView('view-root')));
+
+// NOTE: Poly Haven's docs ask for a unique User-Agent header, but browsers
+// treat "User-Agent" as forbidden for fetch() — a browser security rule, not
+// a bug here. They currently still serve UA-less requests fine.
+
+async function loadPolyHavenFloors() {
+  const grid = document.getElementById('grid-ph-floor');
+  grid.innerHTML = '<div class="empty-msg">جاري التحميل…</div>';
+  try {
+    const res = await fetch('https://api.polyhaven.com/assets?type=textures&categories=outdoor');
+    const json = await res.json();
+    const items = Object.entries(json).map(([id, v]) => ({ id, ...v })).sort((a,b)=>(b.download_count||0)-(a.download_count||0)).slice(0,15);
+    renderGrid(grid, items, i=>i.name, i=>i.thumbnail_url, async (item) => {
+      showLoading(true);
+      const result = await getPolyHavenTextureImage(item.id);
+      showLoading(false); overlay.classList.remove('visible');
+      if (!result) { setStatus('تعذر جلب صور هذا العنصر.'); return; }
+      setGroundTexture(result.url, result.tileSizeMeters);
+    });
+  } catch (e) { grid.innerHTML = '<div class="empty-msg">فشل الاتصال بـ Poly Haven.</div>'; }
+}
+async function getPolyHavenTextureImage(assetId) {
+  try {
+    const filesRes = await fetch(`https://api.polyhaven.com/files/${assetId}`);
+    const files = await filesRes.json();
+    const nonImage = new Set(['blend','gltf','mtlx']);
+    const mapKeys = Object.keys(files).filter(k => !nonImage.has(k));
+    if (mapKeys.length === 0) return null;
+    const chosenKey = mapKeys.find(k => /diff|col/i.test(k)) || mapKeys[0];
+    const resolutions = files[chosenKey];
+    const resKey = resolutions['1k'] ? '1k' : Object.keys(resolutions)[0];
+    const formats = resolutions[resKey];
+    const formatKey = formats.jpg ? 'jpg' : (formats.png ? 'png' : Object.keys(formats)[0]);
+    const url = formats[formatKey]?.url;
+    if (!url) return null;
+    let tileSizeMeters = 2.0;
+    try {
+      const infoRes = await fetch(`https://api.polyhaven.com/info/${assetId}`);
+      const info = await infoRes.json();
+      if (Array.isArray(info.dimensions) && info.dimensions.length) tileSizeMeters = info.dimensions[0] / 1000;
+    } catch(_){}
+    return { url, tileSizeMeters };
+  } catch (_) { return null; }
+}
+async function loadPolyHavenModels(gridId, category) {
+  const grid = document.getElementById(gridId || 'grid-ph-model');
+  grid.innerHTML = '<div class="empty-msg">جاري التحميل…</div>';
+  try {
+    const catParam = category ? `&categories=${category}` : '';
+    const res = await fetch(`https://api.polyhaven.com/assets?type=models${catParam}`);
+    const json = await res.json();
+    const items = Object.entries(json).map(([id, v]) => ({ id, ...v })).sort((a,b)=>(b.download_count||0)-(a.download_count||0)).slice(0,18);
+    renderGrid(grid, items, i=>i.name, i=>i.thumbnail_url, async (item) => {
+      showLoading(true);
+      const url = await getPolyHavenModelUrl(item.id);
+      showLoading(false); overlay.classList.remove('visible');
+      if (!url) { setStatus('تعذر جلب ملف هذا النموذج.'); return; }
+      addModelFromUrl(url, item.name);
+    });
+  } catch (e) { grid.innerHTML = '<div class="empty-msg">فشل الاتصال بـ Poly Haven.</div>'; }
+}
+async function getPolyHavenModelUrl(assetId) {
+  try {
+    const res = await fetch(`https://api.polyhaven.com/files/${assetId}`);
+    const files = await res.json();
+    if (!files.gltf) return null;
+    const resKey = files.gltf['1k'] ? '1k' : Object.keys(files.gltf)[0];
+    return files.gltf[resKey]?.gltf?.url || null;
+  } catch (_) { return null; }
+}
+
+async function loadAmbientCGFloors() {
+  const grid = document.getElementById('grid-acg-floor');
+  grid.innerHTML = '<div class="empty-msg">جاري التحميل…</div>';
+  try {
+    const res = await fetch('https://ambientcg.com/api/v2/full_json?type=Material&include=imageData&limit=15&sort=Popular');
+    const json = await res.json();
+    const items = findAssetList(json).map(a => ({ assetId:a.assetId||a.id||'', displayName:a.displayName||a.name||a.assetId||'مادة', thumb:findFirstImageUrl(a) })).filter(m=>m.assetId);
+    renderGrid(grid, items, i=>i.displayName, i=>i.thumb, async (item) => {
+      showLoading(true);
+      const dataUri = await getAmbientCGColorMap(item.assetId);
+      showLoading(false); overlay.classList.remove('visible');
+      if (!dataUri) { setStatus('تعذر استخراج صورة المادة (قد تكون قيود CORS).'); return; }
+      setGroundTexture(dataUri, 2.0);
+    });
+  } catch (e) { grid.innerHTML = '<div class="empty-msg">فشل الاتصال بـ AmbientCG.</div>'; }
+}
+async function getAmbientCGColorMap(assetId) {
+  try {
+    const res = await fetch(`https://ambientcg.com/api/v2/full_json?id=${assetId}&include=downloadData`);
+    const json = await res.json();
+    const zipUrl = findFirstZipUrl(json);
+    if (!zipUrl) return null;
+    const zipRes = await fetch(zipUrl);
+    const buf = new Uint8Array(await zipRes.arrayBuffer());
+    const files = unzipSync(buf);
+    let chosenName = Object.keys(files).find(n => { const l=n.toLowerCase(); return (l.endsWith('.jpg')||l.endsWith('.jpeg')||l.endsWith('.png')) && (l.includes('color')||l.includes('albedo')||l.includes('basecolor')||l.includes('diffuse')); });
+    if (!chosenName) chosenName = Object.keys(files).find(n => /\.(jpg|jpeg|png)$/i.test(n));
+    if (!chosenName) return null;
+    const bytes = files[chosenName];
+    const mime = chosenName.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+    let binary = ''; for (let i=0;i<bytes.length;i++) binary += String.fromCharCode(bytes[i]);
+    return `data:${mime};base64,${btoa(binary)}`;
+  } catch (_) { return null; }
+}
+function findAssetList(node) {
+  if (Array.isArray(node)) {
+    const maps = node.filter(m => m && (m.assetId || m.displayName));
+    if (maps.length) return maps;
+    for (const v of node) { const f = findAssetList(v); if (f.length) return f; }
+  } else if (node && typeof node === 'object') {
+    for (const k of ['foundAssets','foundAsset','assets','Assets']) if (Array.isArray(node[k])) return node[k];
+    for (const v of Object.values(node)) { const f = findAssetList(v); if (f.length) return f; }
+  }
+  return [];
+}
+function findFirstImageUrl(node) {
+  if (typeof node === 'string') return /^http.*\.(png|jpe?g)$/i.test(node) ? node : null;
+  if (Array.isArray(node)) { for (const v of node) { const f = findFirstImageUrl(v); if (f) return f; } }
+  else if (node && typeof node === 'object') { for (const v of Object.values(node)) { const f = findFirstImageUrl(v); if (f) return f; } }
+  return null;
+}
+function findFirstZipUrl(node) {
+  if (typeof node === 'string') return /^http.*\.zip/i.test(node) ? node : null;
+  if (Array.isArray(node)) { for (const v of node) { const f = findFirstZipUrl(v); if (f) return f; } }
+  else if (node && typeof node === 'object') { for (const v of Object.values(node)) { const f = findFirstZipUrl(v); if (f) return f; } }
+  return null;
+}
+
+/* ---- Sketchfab API ----
+   تصفح + بحث: يعملان بدون تسجيل دخول.
+   تحميل النموذج: يحتاج تسجيل دخول OAuth لمرة واحدة.
+   خطوات الإعداد الكامل:
+   1. سجّل على sketchfab.com مجاناً.
+   2. اذهب إلى: https://sketchfab.com/settings/apps ← New App
+   3. في حقل Redirect URI: ضع رابط موقعك بالضبط (مثال: https://udueirgvj.github.io/TL/index.html)
+   4. انسخ Client ID وضعه في المتغير أدناه.
+   ------------------------------------------------------------------ */
+const SKETCHFAB_CLIENT_ID = 'PUT_YOUR_SKETCHFAB_CLIENT_ID_HERE';
+
+function getSketchfabToken() {
+  if (location.hash.includes('access_token=')) {
+    const params = new URLSearchParams(location.hash.slice(1));
+    const token = params.get('access_token');
+    if (token) { sessionStorage.setItem('sketchfab_token', token); history.replaceState(null, '', location.pathname + location.search); }
+  }
+  return sessionStorage.getItem('sketchfab_token');
+}
+function sketchfabLogin() {
+  if (SKETCHFAB_CLIENT_ID.startsWith('PUT_YOUR')) { setStatus('سجّل تطبيقاً مجانياً على Sketchfab أولاً وضع CLIENT_ID في الكود (راجع README).'); return; }
+  const redirect = encodeURIComponent(location.href.split('#')[0]);
+  location.href = `https://sketchfab.com/oauth2/authorize/?response_type=token&client_id=${SKETCHFAB_CLIENT_ID}&redirect_uri=${redirect}`;
+}
+document.getElementById('sketchfab-search-btn').addEventListener('click', () => searchSketchfab(document.getElementById('sketchfab-search-input').value));
+async function searchSketchfab(query) {
+  const grid = document.getElementById('grid-sketchfab-model');
+  grid.innerHTML = '<div class="empty-msg">جاري البحث…</div>';
+  try {
+    const res = await fetch(`https://api.sketchfab.com/v3/search?type=models&downloadable=true&count=15&q=${encodeURIComponent(query||'')}`);
+    const json = await res.json();
+    const items = (json.results||[]).map(r => ({ uid:r.uid, name:r.name, thumb:r.thumbnails?.images?.[0]?.url }));
+    renderGrid(grid, items, i=>i.name, i=>i.thumb, (item) => { overlay.classList.remove('visible'); downloadSketchfabModel(item.uid, item.name); });
+  } catch (e) { grid.innerHTML = '<div class="empty-msg">فشل الاتصال بـ Sketchfab.</div>'; }
+}
+async function downloadSketchfabModel(uid, name) {
+  const token = getSketchfabToken();
+  if (!token) { sketchfabLogin(); return; }
+  setStatus(`جاري تحميل ${name} من Sketchfab…`);
+  showLoading(true);
+  try {
+    const res = await fetch(`https://api.sketchfab.com/v3/models/${uid}/download`, { headers:{ Authorization:`Bearer ${token}` } });
+    if (res.status === 401) { sessionStorage.removeItem('sketchfab_token'); showLoading(false); sketchfabLogin(); return; }
+    const json = await res.json();
+    const zipUrl = json.gltf?.url;
+    if (!zipUrl) { showLoading(false); setStatus('هذا النموذج غير قابل للتحميل عبر API من Sketchfab.'); return; }
+    const zipBuf = new Uint8Array(await (await fetch(zipUrl)).arrayBuffer());
+    const files = unzipSync(zipBuf);
+    const gltfName = Object.keys(files).find(n => n.toLowerCase().endsWith('.gltf'));
+    if (!gltfName) { showLoading(false); setStatus('تعذر إيجاد ملف gltf داخل الأرشيف.'); return; }
+    const blobUrls = {};
+    for (const [fname, bytes] of Object.entries(files)) { if (fname === gltfName) continue; blobUrls[fname] = URL.createObjectURL(new Blob([bytes])); }
+    const manager = new THREE.LoadingManager();
+    manager.setURLModifier((url) => { const base = url.split('/').pop(); return blobUrls[base] || blobUrls[url] || url; });
+    const loader = new GLTFLoader(manager);
+    const gltfText = new TextDecoder().decode(files[gltfName]);
+    loader.parse(gltfText, '', (gltf) => { showLoading(false); finalizeImportedObject(gltf.scene, name); }, () => { showLoading(false); setStatus('فشل تحميل نموذج Sketchfab.'); });
+  } catch (e) { showLoading(false); setStatus('فشل الاتصال بـ Sketchfab.'); }
+}
+getSketchfabToken(); // capture token from redirect, if we just came back from login
+
+function renderGrid(container, items, nameFn, thumbFn, onPick) {
+  container.innerHTML = '';
+  if (items.length === 0) { container.innerHTML = '<div class="empty-msg">لا توجد نتائج</div>'; return; }
+  for (const item of items) {
+    const el = document.createElement('div');
+    el.className = 'grid-item';
+    const thumb = thumbFn(item) || '';
+    el.innerHTML = `<img src="${thumb}" loading="lazy" onerror="this.style.opacity=0.15" /><div class="name">${nameFn(item) || ''}</div>`;
+    el.addEventListener('click', () => onPick(item));
+    container.appendChild(el);
+  }
+}
+
+document.getElementById('model-url-add-btn').addEventListener('click', () => {
+  const url = document.getElementById('model-url-input').value.trim();
+  if (!url) return;
+  overlay.classList.remove('visible');
+  addModelFromUrl(url, url.split('/').pop());
+});
+document.getElementById('model-file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  overlay.classList.remove('visible');
+  const reader = new FileReader();
+  reader.onload = () => addModelFromArrayBuffer(reader.result, file.name);
+  reader.onerror = () => setStatus('تعذر قراءة الملف.');
+  reader.readAsArrayBuffer(file);
+});
+</script>
+</body>
+</html>
+
