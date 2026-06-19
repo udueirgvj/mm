@@ -255,7 +255,15 @@ function openProject(n){
   n=(n||'').trim()||'مشروع بدون اسم';
   savePrj(n); ptitleEl.textContent=n;
   menuEl.classList.add('hidden'); appEl.classList.add('visible');
-  if(!engineRunning){engineRunning=true;bootEngine();}
+  if(!engineRunning){
+    engineRunning=true;
+    try{ bootEngine(); }
+    catch(err){
+      // Show error visibly so the user (and developer) can see what went wrong
+      document.getElementById('sbar').textContent='خطأ في تشغيل المحرك: '+err.message;
+      console.error('[Engine boot error]', err);
+    }
+  }
 }
 document.getElementById('startbtn').addEventListener('click',()=>openProject(pnameEl.value));
 pnameEl.addEventListener('keydown',e=>{ if(e.key==='Enter') openProject(pnameEl.value); });
@@ -303,24 +311,36 @@ function bootEngine(){
   camera=new THREE.PerspectiveCamera(65,vp.clientWidth/vp.clientHeight,0.1,4000);
   camera.position.set(0,12,18);
 
-  /* Post-processing: Bloom (like UE5 Lumen bloom) */
-  composer=new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene,camera));
-  const bloom=new UnrealBloomPass(new THREE.Vector2(vp.clientWidth,vp.clientHeight),0.35,0.55,0.82);
-  composer.addPass(bloom);
-  composer.addPass(new OutputPass());
+  /* Post-processing: Bloom (like UE5 Lumen bloom) — optional, falls back to
+     direct render if EffectComposer throws (e.g. WebGL1 device, old browser) */
+  try {
+    composer=new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene,camera));
+    const bloom=new UnrealBloomPass(new THREE.Vector2(vp.clientWidth,vp.clientHeight),0.35,0.55,0.82);
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
+  } catch(e) {
+    console.warn('[Bloom] post-processing unavailable, using direct render:', e.message);
+    composer=null; // signals the loop to use renderer.render() directly
+  }
 
   window.addEventListener('resize',()=>{
     camera.aspect=vp.clientWidth/vp.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(vp.clientWidth,vp.clientHeight);
-    composer.setSize(vp.clientWidth,vp.clientHeight);
+    if(composer) composer.setSize(vp.clientWidth,vp.clientHeight);
   });
 
-  /* Sky + Sun (procedural, like UE5 sky atmosphere) */
-  sky=new Sky(); sky.scale.setScalar(4000); scene.add(sky);
+  /* Sky + Sun (procedural) — optional, falls back to solid colour */
+  try {
+    sky=new Sky(); sky.scale.setScalar(4000); scene.add(sky);
+  } catch(e) {
+    console.warn('[Sky] not available:', e.message);
+    sky=null;
+    scene.background=new THREE.Color(0x9fb4c7);
+  }
   sunDir=new THREE.Vector3();
-  setSunTime(0.55); // afternoon default
+  setSunTime(0.55);
 
   /* Hemispheric fill */
   scene.add(new THREE.HemisphereLight(0xddeeff,0x446644,0.6));
@@ -382,7 +402,8 @@ function bootEngine(){
       orbitCtrl.update();
       if(selBox&&selEntry) selBox.update();
     }
-    composer.render();
+    if(composer) composer.render();
+    else renderer.render(scene,camera);
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
@@ -392,15 +413,15 @@ function bootEngine(){
 /* ─── Sky / Sun ────────────────────────────────────────────────────── */
 let sunLight; // kept global so setSunTime can update it
 function setSunTime(t){
-  // t=0 → midnight, 0.5 → noon, 1 → midnight again
-  const phi=Math.PI*(1-t)*1.1;   // elevation angle
-  const theta=Math.PI*0.25;       // azimuth (fixed)
+  const phi=Math.PI*(1-t)*1.1, theta=Math.PI*0.25;
   sunDir.setFromSphericalCoords(1,phi,theta);
 
-  const su=sky.material.uniforms;
-  su.sunPosition.value.copy(sunDir);
-  su.turbidity.value=10; su.rayleigh.value=2;
-  su.mieCoefficient.value=0.005; su.mieDirectionalG.value=0.8;
+  if(sky){
+    const su=sky.material.uniforms;
+    su.sunPosition.value.copy(sunDir);
+    su.turbidity.value=10; su.rayleigh.value=2;
+    su.mieCoefficient.value=0.005; su.mieDirectionalG.value=0.8;
+  }
 
   // Remove old sun light and rebuild at new angle
   if(sunLight){ scene.remove(sunLight); sunLight.dispose?.(); }
