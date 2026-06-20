@@ -50,6 +50,13 @@ canvas{display:block;touch-action:none;}
 #selbar button{background:transparent;border:none;color:var(--t);font-size:12px;padding:6px 9px;border-radius:7px;}
 #selbar button.del{color:#e06040;}
 #selbar button:hover{background:rgba(255,255,255,0.07);}
+/* water placement */
+#waterplace{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);display:none;gap:4px;background:rgba(14,16,20,0.92);border:1px solid var(--adim);border-radius:14px;padding:7px 9px;align-items:center;pointer-events:auto;}
+#waterplace.vis{display:flex;}
+#waterplace button{background:transparent;border:none;color:var(--t);font-size:14px;padding:5px 9px;border-radius:7px;}
+#waterplace #wpConfirm{background:var(--accent);color:#000;font-weight:700;}
+#waterplace button:hover{background:rgba(255,255,255,0.07);}
+#wpRadiusLabel{font-size:11px;color:var(--td);min-width:74px;text-align:center;white-space:nowrap;}
 /* day/night */
 #dnrow{display:flex;align-items:center;gap:8px;pointer-events:auto;background:rgba(14,16,20,0.88);border:1px solid var(--adim);border-radius:14px;padding:7px 12px;}
 #dnrow label{font-size:12px;color:var(--td);white-space:nowrap;}
@@ -137,8 +144,18 @@ canvas{display:block;touch-action:none;}
       <button data-a="up">⬆</button>
       <button data-a="down">⬇</button>
       <button data-a="ry">↻ دوران</button>
+      <button data-a="color">🎨 لون</button>
       <button data-a="del" class="del">🗑</button>
       <button data-a="close">✕</button>
+      <input type="color" id="colorPicker" style="display:none;"/>
+    </div>
+
+    <div id="waterplace">
+      <button id="wpMinus">−</button>
+      <span id="wpRadiusLabel">نصف القطر: 15م</span>
+      <button id="wpPlus">+</button>
+      <button id="wpConfirm">تأكيد المكان</button>
+      <button id="wpCancel">إلغاء</button>
     </div>
 
     <!-- play HUD -->
@@ -160,15 +177,16 @@ canvas{display:block;touch-action:none;}
         <div class="mtile" data-go="vphf"><span class="mic">▦</span> أرضية من Poly Haven</div>
         <div class="mtile" data-go="vacgf"><span class="mic">▦</span> أرضية من AmbientCG</div>
         <div class="slbl">بيئة</div>
-        <div class="mtile" id="addwbtn"><span class="mic">≈</span> إضافة بحر / ماء</div>
+        <div class="mtile" id="addwbtn"><span class="mic">≈</span> إضافة بحر / ماء (تحديد مكان وحجم)</div>
         <div class="mtile" id="addpartbtn"><span class="mic">✦</span> إضافة جسيمات (أوراق / مطر)</div>
+        <div class="mtile" data-go="vscript"><span class="mic">{ }</span> عنصر مبرمج بكود JS خاص بك</div>
         <div class="slbl">شخصيات ونماذج</div>
         <div class="mtile" id="addcharbtn"><span class="mic">☻</span> شخصية بشرية بسيطة</div>
         <div class="mtile" data-go="vrpm"><span class="mic">👤</span> شخصية Ready Player Me</div>
         <div class="mtile" data-go="vphn"><span class="mic">🌿</span> طبيعة / نباتات — Poly Haven</div>
         <div class="mtile" data-go="vphu"><span class="mic">🏛</span> مباني / أثاث — Poly Haven</div>
         <div class="mtile" data-go="vpha"><span class="mic">◆</span> كل نماذج Poly Haven</div>
-        <div class="mtile" data-go="vskf"><span class="mic">◇</span> Sketchfab</div>
+        <div class="mtile" data-go="vskf"><span class="mic">◇</span> مباني وبيوت وسيارات — Sketchfab</div>
         <div class="mtile" data-go="vurl"><span class="mic">⇗</span> استيراد من رابط (.glb/.gltf)</div>
         <div class="mtile" data-go="vfile"><span class="mic">⇧</span> استيراد ملف GLB من جهازك</div>
       </div>
@@ -192,8 +210,25 @@ canvas{display:block;touch-action:none;}
       <div class="sv" id="vskf">
         <div class="svhdr"><button class="bk" data-bk>→</button> Sketchfab</div>
         <div class="hint" style="padding:10px 14px 0;font-size:12px;">التصفح مجاني بدون تسجيل. لتحميل نموذج تحتاج CLIENT_ID من sketchfab.com/settings/apps.</div>
-        <div class="srow"><input id="sfq" type="text" placeholder="ابحث… مثال: house, tree, car"/><button id="sfsbtn">بحث</button></div>
+        <div class="srow" style="flex-wrap:wrap;">
+          <button class="chip" data-preset="house">🏠 منازل</button>
+          <button class="chip" data-preset="building">🏢 مباني</button>
+          <button class="chip" data-preset="skyscraper">🏙 ناطحة سحاب</button>
+          <button class="chip" data-preset="furniture">🛋 أثاث</button>
+          <button class="chip" data-preset="car">🚗 سيارات</button>
+        </div>
+        <div class="srow"><input id="sfq" type="text" placeholder="أو ابحث بنفسك… مثال: tree, animal"/><button id="sfsbtn">بحث</button></div>
         <div class="grid" id="gskf"></div>
+      </div>
+
+      <div class="sv" id="vscript">
+        <div class="svhdr"><button class="bk" data-bk>→</button> عنصر مبرمج بكود JS</div>
+        <div class="iform">
+          <div class="hint">اكتب كود JavaScript يُنفَّذ كل إطار على هذا العنصر (مكعب افتراضي). المتغيرات المتاحة: <b>obj</b> (الكائن ثلاثي الأبعاد)، <b>t</b> (الزمن الكلي بالثواني)، <b>dt</b> (زمن الإطار). مثال: <code>obj.rotation.y += dt;</code></div>
+          <textarea id="scriptCode" rows="6" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--adim);background:var(--panel2);color:var(--t);font-family:monospace;font-size:13px;" placeholder="obj.position.y = 1 + Math.sin(t)*0.5;"></textarea>
+          <button class="btn" id="scriptAddBtn">إنشاء العنصر المبرمج</button>
+          <div class="hint">⚠️ الكود يعمل محلياً في متصفحك فقط ولا يُرسل لأي خادم. لا تلصق كوداً من مصدر لا تثق به.</div>
+        </div>
       </div>
 
       <div class="sv" id="vurl">
@@ -289,9 +324,11 @@ const loader=new GLTFLoader();
 const placed=[]; // [{mesh,body,kind}]
 let selEntry=null, selBox=null;
 let brushMode=null;
-let waterMesh=null, waterTime=0;
+let waterMesh=null, waterTime=0; // kept for back-compat (unused after multi-water refactor)
 let particles=null;
 let spawnIdx=0;
+let wPlacing=false, wRadius=15, wGhost=null;
+let scriptClock=0;
 
 /* ─── Boot engine ───────────────────────────────────────────────────── */
 function bootEngine(){
@@ -349,9 +386,9 @@ function bootEngine(){
   /* Physics world */
   world=new CANNON.World({gravity:new CANNON.Vec3(0,-9.82,0)});
   world.broadphase=new CANNON.SAPBroadphase(world);
+  world.solver.iterations=14; // more iterations = fewer tunneling/penetration glitches
   world.defaultContactMaterial.friction=0.4;
   world.defaultContactMaterial.restitution=0.0;
-  // CCD-like: ensure contacts are found even at speed
   world.defaultContactMaterial.contactEquationStiffness=1e8;
 
   /* Ground */
@@ -389,17 +426,19 @@ function bootEngine(){
   function loop(){
     const dt=Math.min(clock.getDelta(),0.05);
     waterTime+=dt;
+    scriptClock+=dt;
     animateWater();
     animateParticles(dt);
+    runScripts(dt);
     if(mode==='play'){
       movePlayer(dt);
-      world.step(1/60,dt,3);
+      world.step(1/60,dt,10);
       grounded=playerBody.position.y<=(P_H/2+0.12)||Math.abs(playerBody.velocity.y)<0.06;
       playerMesh.position.copy(playerBody.position);
       playerMesh.rotation.y=playerYaw;
       updatePlayCamera(dt);
     } else {
-      world.step(1/60,dt,3);
+      world.step(1/60,dt,10);
       orbitCtrl.update();
       if(selBox&&selEntry) selBox.update();
     }
@@ -618,8 +657,9 @@ function setupEditInteraction(){
 
   function onDown(e){
     if(mode!=='edit')return;
-    if(e.target.closest('#selbar,#etbar'))return;
+    if(e.target.closest('#selbar,#etbar,#waterplace'))return;
     setPtr(e);
+    if(wPlacing){const h=gndHit();if(h)wGhost.position.set(h.point.x,0.12,h.point.z);dragging=true;return;}
     if(brushMode){sculptAt(gndHit());dragging=true;return;}
     if(selEntry?.moving){const h=gndHit();if(h)placeAt(selEntry,h.point);dragging=true;return;}
     select(objHit());
@@ -627,6 +667,7 @@ function setupEditInteraction(){
   function onMove(e){
     if(mode!=='edit'||!dragging)return;
     setPtr(e);
+    if(wPlacing){const h=gndHit();if(h)wGhost.position.set(h.point.x,0.12,h.point.z);return;}
     if(brushMode){sculptAt(gndHit());return;}
     if(selEntry?.moving){const h=gndHit();if(h)placeAt(selEntry,h.point);}
   }
@@ -657,8 +698,19 @@ function setupEditInteraction(){
       else if(a==='up')lift(selEntry,0.35);
       else if(a==='down')lift(selEntry,-0.35);
       else if(a==='ry'){selEntry.mesh.rotation.y+=Math.PI/8;syncBody(selEntry);}
+      else if(a==='color'){document.getElementById('colorPicker').click();}
       else if(a==='del')delEntry(selEntry);
       else if(a==='close')deselect();
+    });
+  });
+  document.getElementById('colorPicker').addEventListener('input',e=>{
+    if(!selEntry)return;
+    const col=new THREE.Color(e.target.value);
+    selEntry.mesh.traverse(c=>{
+      if(c.isMesh&&c.material){
+        const mats=Array.isArray(c.material)?c.material:[c.material];
+        mats.forEach(m=>{ if(m.color) m.color.copy(col); });
+      }
     });
   });
 
@@ -709,7 +761,7 @@ function lift(e,d){e.mesh.position.y+=d;syncBody(e);}
 function syncBody(e){
   if(!e.body)return;
   world.removeBody(e.body);
-  e.body=mkBody(e.mesh); world.addBody(e.body);
+  e.body=mkBody(e.mesh,e.kind==='script'); world.addBody(e.body);
 }
 function delEntry(e){
   scene.remove(e.mesh); if(e.body)world.removeBody(e.body);
@@ -717,14 +769,47 @@ function delEntry(e){
   setStatus('تم حذف العنصر.');
 }
 
-/* ─── Object physics body ─────────────────────────────────────────── */
-function mkBody(mesh){
-  const box=new THREE.Box3().setFromObject(mesh);
-  const sz=new THREE.Vector3(); box.getSize(sz);
-  const cn=new THREE.Vector3(); box.getCenter(cn);
-  sz.x=Math.max(sz.x,0.05); sz.y=Math.max(sz.y,0.05); sz.z=Math.max(sz.z,0.05);
-  const b=new CANNON.Body({mass:0,shape:new CANNON.Box(new CANNON.Vec3(sz.x/2,sz.y/2,sz.z/2))});
-  b.position.set(cn.x,cn.y,cn.z); return b;
+/* ─── Object physics body ─────────────────────────────────────────────
+   Builds a COMPOUND collider: one box per visible sub-mesh, positioned in
+   the root object's local frame. This matches irregular / multi-part
+   imported models (e.g. a cluster of separate rocks) far more accurately
+   than a single bounding box around the whole object, which is the most
+   likely cause of the player visually clipping into complex models. ---- */
+function mkBody(root,kinematic){
+  root.updateMatrixWorld(true);
+  const rootInv=new THREE.Matrix4().copy(root.matrixWorld).invert();
+  const body=new CANNON.Body({mass:0});
+  let added=false;
+  root.traverse(c=>{
+    if(!c.isMesh||!c.geometry)return;
+    if(!c.geometry.boundingBox) c.geometry.computeBoundingBox();
+    const bb=c.geometry.boundingBox;
+    if(!bb)return;
+    c.updateMatrixWorld(true);
+    const toLocal=new THREE.Matrix4().multiplyMatrices(rootInv,c.matrixWorld);
+    const localBox=new THREE.Box3();
+    for(let xi=0;xi<2;xi++)for(let yi=0;yi<2;yi++)for(let zi=0;zi<2;zi++){
+      const p=new THREE.Vector3(xi?bb.max.x:bb.min.x,yi?bb.max.y:bb.min.y,zi?bb.max.z:bb.min.z);
+      p.applyMatrix4(toLocal);
+      localBox.expandByPoint(p);
+    }
+    const sz=new THREE.Vector3(); localBox.getSize(sz);
+    const cn=new THREE.Vector3(); localBox.getCenter(cn);
+    sz.x=Math.max(sz.x,0.04); sz.y=Math.max(sz.y,0.04); sz.z=Math.max(sz.z,0.04);
+    body.addShape(new CANNON.Box(new CANNON.Vec3(sz.x/2,sz.y/2,sz.z/2)), new CANNON.Vec3(cn.x,cn.y,cn.z));
+    added=true;
+  });
+  if(!added){
+    // Fallback: plain bounding box (e.g. for primitive meshes with no children)
+    const box=new THREE.Box3().setFromObject(root);
+    const sz=new THREE.Vector3(); box.getSize(sz);
+    sz.x=Math.max(sz.x,0.05); sz.y=Math.max(sz.y,0.05); sz.z=Math.max(sz.z,0.05);
+    body.addShape(new CANNON.Box(new CANNON.Vec3(sz.x/2,sz.y/2,sz.z/2)));
+  }
+  body.position.copy(root.position);
+  body.quaternion.copy(root.quaternion);
+  if(kinematic) body.type=CANNON.Body.KINEMATIC; // moves each frame but still blocks the player
+  return body;
 }
 
 /* ─── Import helpers ───────────────────────────────────────────────── */
@@ -752,25 +837,63 @@ function addFromBuffer(buf,label){
   loader.parse(buf,'',g=>finalizeModel(g.scene,label||'نموذج'),()=>setStatus('تعذر قراءة الملف.'));
 }
 
-/* ─── Water (animated vertex displacement) ─────────────────────────── */
-function addWater(){
-  if(waterMesh){scene.remove(waterMesh);}
-  const geo=new THREE.PlaneGeometry(GROUND,GROUND,80,80); geo.rotateX(-Math.PI/2);
+/* ─── Water placement tool ─────────────────────────────────────────────
+   Clicking "إضافة بحر/ماء" no longer instantly floods the whole ground —
+   it shows a draggable, resizable ring on the terrain. The user drags to
+   position it and uses +/− to resize, then confirms to create a real
+   circular water patch only in that area. ---- */
+function startWaterPlacement(){
+  wPlacing=true; wRadius=15;
+  deselect(); brushMode=null;
+  document.querySelectorAll('[data-br]').forEach(c=>c.classList.remove('on'));
+  if(wGhost){scene.remove(wGhost);wGhost=null;}
+  wGhost=new THREE.Mesh(
+    new THREE.RingGeometry(Math.max(1,wRadius-0.3),wRadius,48).rotateX(-Math.PI/2),
+    new THREE.MeshBasicMaterial({color:0x3da9fc,transparent:true,opacity:0.85,side:THREE.DoubleSide})
+  );
+  wGhost.position.set(playerMesh.position.x,0.12,playerMesh.position.z);
+  scene.add(wGhost);
+  document.getElementById('waterplace').classList.add('vis');
+  document.getElementById('wpRadiusLabel').textContent=`نصف القطر: ${wRadius}م`;
+  setStatus('اسحب على الأرض لتحديد مكان البحر، واستخدم +/− لتغيير الحجم.');
+}
+function updateWaterGhostRadius(){
+  if(!wGhost)return;
+  wGhost.geometry.dispose();
+  wGhost.geometry=new THREE.RingGeometry(Math.max(1,wRadius-0.3),wRadius,48).rotateX(-Math.PI/2);
+  document.getElementById('wpRadiusLabel').textContent=`نصف القطر: ${wRadius}م`;
+}
+function cancelWaterPlacement(){
+  wPlacing=false;
+  if(wGhost){scene.remove(wGhost);wGhost=null;}
+  document.getElementById('waterplace').classList.remove('vis');
+}
+function confirmWaterPlacement(){
+  if(!wGhost)return;
+  finalizeWater(wGhost.position.clone(),wRadius);
+  cancelWaterPlacement();
+}
+function finalizeWater(center,radius){
+  const geo=new THREE.CircleGeometry(radius,48); geo.rotateX(-Math.PI/2);
   const mat=new THREE.MeshStandardMaterial({color:0x1e6fa8,transparent:true,opacity:0.78,roughness:0.1,metalness:0.15});
-  waterMesh=new THREE.Mesh(geo,mat); waterMesh.position.y=0.5; scene.add(waterMesh);
-  register(waterMesh,null,'water');
-  setStatus('تمت إضافة الماء. حدده واستخدم ⬆/⬇ لتغيير المستوى.');
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.position.set(center.x,center.y+0.25,center.z);
+  mesh.userData.radius=radius;
+  scene.add(mesh);
+  register(mesh,null,'water'); // no physics body — water doesn't block movement
+  setStatus('تمت إضافة بحيرة. حددها لنقلها أو رفع/خفض مستوى سطحها.');
 }
 function animateWater(){
-  if(!waterMesh)return;
-  const pos=waterMesh.geometry.attributes.position;
-  const base=waterMesh.position.y;
-  for(let i=0;i<pos.count;i++){
-    const x=pos.getX(i), z=pos.getZ(i);
-    pos.setY(i, Math.sin(x*0.07+waterTime*1.2)*0.08+Math.sin(z*0.05+waterTime*0.9)*0.06);
+  for(const e of placed){
+    if(e.kind!=='water')continue;
+    const pos=e.mesh.geometry.attributes.position;
+    for(let i=0;i<pos.count;i++){
+      const x=pos.getX(i), z=pos.getZ(i);
+      pos.setY(i, Math.sin(x*0.07+waterTime*1.2)*0.08+Math.sin(z*0.05+waterTime*0.9)*0.06);
+    }
+    pos.needsUpdate=true;
+    e.mesh.geometry.computeVertexNormals();
   }
-  pos.needsUpdate=true;
-  waterMesh.geometry.computeVertexNormals();
 }
 
 /* ─── Particles (leaves / rain) ─────────────────────────────────────── */
@@ -808,7 +931,39 @@ function animateParticles(dt){
   pos.needsUpdate=true;
 }
 
-/* ─── Humanoid mesh ─────────────────────────────────────────────────── */
+/* ─── Scripted objects (user-written JS, runs every frame) ─────────────
+   The user writes a function body with access to (obj, t, dt). It's
+   compiled once with `new Function` and executed in try/catch each frame;
+   any runtime error permanently stops that object's script (rather than
+   spamming errors every frame) and reports it in the status bar. ---- */
+function addScriptedObject(code){
+  const mesh=new THREE.Mesh(
+    new THREE.BoxGeometry(0.8,0.8,0.8),
+    new THREE.MeshStandardMaterial({color:0x44aa88,roughness:0.5})
+  );
+  mesh.castShadow=true; mesh.receiveShadow=true;
+  const sp=spawnPos(); mesh.position.set(sp.x,0.4,sp.z);
+  mesh.userData.scriptSrc=code;
+  scene.add(mesh);
+  const body=mkBody(mesh,true); // kinematic — moves via script but still blocks the player
+  world.addBody(body);
+  const entry=register(mesh,body,'script');
+  try{ entry.scriptFn=new Function('obj','t','dt',code); }
+  catch(err){ entry.scriptFn=null; entry.scriptError=true; setStatus('خطأ في الكود: '+err.message); }
+  setStatus('تمت إضافة عنصر مبرمج. حدده لنقله، والكود سيستمر بالعمل عليه.');
+}
+function runScripts(dt){
+  for(const e of placed){
+    if(e.kind!=='script'||!e.scriptFn||e.scriptError)continue;
+    try{
+      e.scriptFn(e.mesh,scriptClock,dt);
+      if(e.body){ e.body.position.copy(e.mesh.position); e.body.quaternion.copy(e.mesh.quaternion); }
+    } catch(err){
+      e.scriptError=true;
+      setStatus('تم إيقاف عنصر مبرمج بسبب خطأ في الكود: '+err.message);
+    }
+  }
+}
 function makeHumanoid(shirt,pants){
   const g=new THREE.Group();
   const sk=new THREE.MeshStandardMaterial({color:0xd8a878,roughness:0.7});
@@ -824,14 +979,23 @@ function makeHumanoid(shirt,pants){
   return g;
 }
 
-/* ─── Save / Load scene ─────────────────────────────────────────────── */
+/* ─── Save / Load scene ───────────────────────────────────────────────
+   NOTE: scripted objects (kind 'script') are NOT restored on load — their
+   JS source is kept in memory only for this session. Everything else
+   (models, characters, water lakes, sun time) is restored. ---- */
 async function saveScene(){
-  const data={objects:placed.map(e=>({
-    kind:e.kind,
-    px:e.mesh.position.x,py:e.mesh.position.y,pz:e.mesh.position.z,
-    ry:e.mesh.rotation.y,
-    url:e.mesh.userData.srcUrl||null
-  })),waterY:waterMesh?waterMesh.position.y:null,sunTime:parseFloat(document.getElementById('dnslider').value)};
+  const data={
+    objects:placed.filter(e=>e.kind!=='water').map(e=>({
+      kind:e.kind,
+      px:e.mesh.position.x,py:e.mesh.position.y,pz:e.mesh.position.z,
+      ry:e.mesh.rotation.y,
+      url:e.mesh.userData.srcUrl||null
+    })),
+    waters:placed.filter(e=>e.kind==='water').map(e=>({
+      x:e.mesh.position.x,y:e.mesh.position.y,z:e.mesh.position.z,r:e.mesh.userData.radius||15
+    })),
+    sunTime:parseFloat(document.getElementById('dnslider').value)
+  };
   try{
     await sb.from('scenes').upsert({name:ptitleEl.textContent,data:JSON.stringify(data)},{onConflict:'name'});
     setStatus('تم حفظ المشهد على السحابة.');
@@ -843,9 +1007,9 @@ async function loadScene(){
     if(!data){setStatus('لا يوجد مشهد محفوظ بهذا الاسم.');return;}
     const sc=JSON.parse(data.data);
     if(sc.sunTime!=null){document.getElementById('dnslider').value=sc.sunTime;setSunTime(sc.sunTime);}
-    if(sc.waterY!=null){addWater();waterMesh.position.y=sc.waterY;}
+    for(const w of(sc.waters||[])) finalizeWater(new THREE.Vector3(w.x,w.y-0.25,w.z),w.r);
     for(const o of(sc.objects||[])){
-      if(o.kind==='water'||!o.url)continue;
+      if(!o.url)continue;
       loader.load(o.url,g=>{
         g.scene.position.set(o.px,o.py,o.pz);
         g.scene.rotation.y=o.ry||0;
@@ -864,7 +1028,20 @@ async function loadScene(){
 const ao=document.getElementById('aoverlay');
 document.getElementById('addbtn').addEventListener('click',()=>{ao.classList.add('vis');showV('vroot');});
 ao.addEventListener('click',e=>{if(e.target===ao)ao.classList.remove('vis');});
-document.getElementById('addwbtn').addEventListener('click',()=>{ao.classList.remove('vis');addWater();});
+document.getElementById('addwbtn').addEventListener('click',()=>{ao.classList.remove('vis');startWaterPlacement();});
+document.getElementById('wpMinus').addEventListener('click',()=>{wRadius=Math.max(3,wRadius-3);updateWaterGhostRadius();});
+document.getElementById('wpPlus').addEventListener('click',()=>{wRadius=Math.min(150,wRadius+3);updateWaterGhostRadius();});
+document.getElementById('wpConfirm').addEventListener('click',confirmWaterPlacement);
+document.getElementById('wpCancel').addEventListener('click',cancelWaterPlacement);
+document.getElementById('scriptAddBtn').addEventListener('click',()=>{
+  const code=document.getElementById('scriptCode').value;
+  if(!code.trim())return;
+  ao.classList.remove('vis'); addScriptedObject(code);
+});
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{
+  document.getElementById('sfq').value=b.dataset.preset;
+  sfSearch(b.dataset.preset);
+}));
 document.getElementById('addpartbtn').addEventListener('click',()=>{ao.classList.remove('vis');addParticles('leaves');});
 document.getElementById('addcharbtn').addEventListener('click',()=>{
   ao.classList.remove('vis');
