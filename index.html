@@ -183,19 +183,40 @@ canvas{display:block;touch-action:none;}
         <div class="slbl">شخصيات ونماذج</div>
         <div class="mtile" id="addcharbtn"><span class="mic">☻</span> شخصية بشرية بسيطة</div>
         <div class="mtile" data-go="vrpm"><span class="mic">👤</span> شخصية Ready Player Me</div>
-        <div class="mtile" data-go="vphn"><span class="mic">🌿</span> طبيعة / نباتات — Poly Haven</div>
-        <div class="mtile" data-go="vphu"><span class="mic">🏛</span> مباني / أثاث — Poly Haven</div>
-        <div class="mtile" data-go="vpha"><span class="mic">◆</span> كل نماذج Poly Haven</div>
+        <div class="mtile" data-go="vphmodels"><span class="mic">◆</span> نماذج Poly Haven (أثاث، إضاءة، زخرفة، طبيعة…)</div>
         <div class="mtile" data-go="vskf"><span class="mic">◇</span> مباني وبيوت وسيارات — Sketchfab</div>
         <div class="mtile" data-go="vurl"><span class="mic">⇗</span> استيراد من رابط (.glb/.gltf)</div>
         <div class="mtile" data-go="vfile"><span class="mic">⇧</span> استيراد ملف GLB من جهازك</div>
       </div>
 
-      <div class="sv" id="vphf"><div class="svhdr"><button class="bk" data-bk>→</button> أرضية Poly Haven</div><div class="grid" id="gphf"></div></div>
+      <div class="sv" id="vphf">
+        <div class="svhdr"><button class="bk" data-bk>→</button> أرضية Poly Haven</div>
+        <div class="srow" style="flex-wrap:wrap;">
+          <button class="chip" data-phtex="outdoor">🌍 خارجي</button>
+          <button class="chip" data-phtex="ground">🟫 تراب</button>
+          <button class="chip" data-phtex="stone">🪨 حجر</button>
+          <button class="chip" data-phtex="wood">🪵 خشب</button>
+          <button class="chip" data-phtex="brick">🧱 طوب</button>
+          <button class="chip" data-phtex="concrete">🏗 خرسانة</button>
+        </div>
+        <div class="grid" id="gphf"></div>
+      </div>
       <div class="sv" id="vacgf"><div class="svhdr"><button class="bk" data-bk>→</button> أرضية AmbientCG</div><div class="grid" id="gacgf"></div></div>
-      <div class="sv" id="vphn"><div class="svhdr"><button class="bk" data-bk>→</button> طبيعة / نباتات</div><div class="grid" id="gphn"></div></div>
-      <div class="sv" id="vphu"><div class="svhdr"><button class="bk" data-bk>→</button> مباني / أثاث</div><div class="grid" id="gphu"></div></div>
-      <div class="sv" id="vpha"><div class="svhdr"><button class="bk" data-bk>→</button> كل النماذج</div><div class="grid" id="gpha"></div></div>
+      <div class="sv" id="vphmodels">
+        <div class="svhdr"><button class="bk" data-bk>→</button> نماذج Poly Haven</div>
+        <div class="srow" style="flex-wrap:wrap;">
+          <button class="chip" data-phmod="">الكل</button>
+          <button class="chip" data-phmod="furniture">🪑 أثاث</button>
+          <button class="chip" data-phmod="lighting">💡 إضاءة وشموع</button>
+          <button class="chip" data-phmod="decorative">🏺 زخرفة</button>
+          <button class="chip" data-phmod="nature">🌿 طبيعة</button>
+          <button class="chip" data-phmod="electronics">🔌 إلكترونيات</button>
+          <button class="chip" data-phmod="tools">🔧 أدوات</button>
+          <button class="chip" data-phmod="appliances">🧺 أجهزة</button>
+          <button class="chip" data-phmod="industrial">🏭 صناعي</button>
+        </div>
+        <div class="grid" id="gphmodels"></div>
+      </div>
 
       <div class="sv" id="vrpm">
         <div class="svhdr"><button class="bk" data-bk>→</button> Ready Player Me</div>
@@ -209,7 +230,7 @@ canvas{display:block;touch-action:none;}
 
       <div class="sv" id="vskf">
         <div class="svhdr"><button class="bk" data-bk>→</button> Sketchfab</div>
-        <div class="hint" style="padding:10px 14px 0;font-size:12px;">التصفح مجاني بدون تسجيل. لتحميل نموذج تحتاج CLIENT_ID من sketchfab.com/settings/apps.</div>
+        <div class="hint" style="padding:10px 14px 0;font-size:12px;">التصفح والمعاينة مجانيان فوراً. أما التحميل الفعلي فيتطلب خطوة إعداد لمرة واحدة من صاحب الموقع (تسجيل تطبيق مجاني على sketchfab.com/settings/apps) — هذا شرط من Sketchfab نفسها وليس خللاً. إن لم تُعدّ هذه الخطوة بعد، استخدم "نماذج Poly Haven" فهي تعمل فوراً بدون أي إعداد.</div>
         <div class="srow" style="flex-wrap:wrap;">
           <button class="chip" data-preset="house">🏠 منازل</button>
           <button class="chip" data-preset="building">🏢 مباني</button>
@@ -433,7 +454,14 @@ function bootEngine(){
     if(mode==='play'){
       movePlayer(dt);
       world.step(1/60,dt,10);
-      grounded=playerBody.position.y<=(P_H/2+0.12)||Math.abs(playerBody.velocity.y)<0.06;
+      const gH=groundHeightAt(playerBody.position.x,playerBody.position.z);
+      if(gH!=null && playerBody.position.y-P_H/2<=gH+0.02){
+        playerBody.position.y=gH+P_H/2;
+        if(playerBody.velocity.y<0) playerBody.velocity.y=0;
+        grounded=true;
+      } else {
+        grounded=false;
+      }
       playerMesh.position.copy(playerBody.position);
       playerMesh.rotation.y=playerYaw;
       updatePlayCamera(dt);
@@ -481,16 +509,42 @@ function setSunTime(t){
   scene.background=fog; // fallback behind sky
 }
 
-/* ─── Ground physics ────────────────────────────────────────────────── */
-function buildGroundBody(){
-  if(groundBody){ world.removeBody(groundBody); }
-  if(groundIsFlat){
-    groundBody=new CANNON.Body({mass:0,shape:new CANNON.Plane()});
-    groundBody.quaternion.setFromEuler(-Math.PI/2,0,0);
-  } else {
-    const pos=groundMesh.geometry.attributes.position;
-    groundBody=new CANNON.Body({mass:0,shape:new CANNON.Trimesh(new Float32Array(pos.array),groundMesh.geometry.index.array)});
+/* ─── Ground physics ─────────────────────────────────────────────────
+   Sculpted terrain used to rebuild a CANNON.Trimesh after each dig/raise,
+   but cannon-es's Trimesh narrowphase is unreliable against a moving
+   capsule on concave shapes — this is why digging a hole didn't actually
+   block/catch the player. Fix: collision against the ground is now done
+   by directly raycasting against the SAME rendered Three.js mesh every
+   frame, so it is always exactly correct, including holes and bumps, with
+   zero rebuild cost. CANNON keeps only a deep static safety-net plane so
+   the player can never fall forever (e.g. off the edge of the terrain). */
+const _groundRay=new THREE.Raycaster();
+_groundRay.far=1200;
+function groundHeightAt(x,z){
+  _groundRay.set(new THREE.Vector3(x,600,z),new THREE.Vector3(0,-1,0));
+  const hit=_groundRay.intersectObject(groundMesh,false);
+  return hit.length?hit[0].point.y:null;
+}
+function sampleMinGroundHeight(cx,cz,radius){
+  let min=Infinity;
+  const ringSteps=10, radialSteps=6;
+  for(let a=0;a<ringSteps;a++){
+    const ang=(a/ringSteps)*Math.PI*2;
+    for(let r=1;r<=radialSteps;r++){
+      const rad=(r/radialSteps)*radius;
+      const h=groundHeightAt(cx+Math.cos(ang)*rad,cz+Math.sin(ang)*rad);
+      if(h!=null&&h<min)min=h;
+    }
   }
+  const ch=groundHeightAt(cx,cz);
+  if(ch!=null&&ch<min)min=ch;
+  return min===Infinity?0:min;
+}
+function buildGroundBody(){
+  if(groundBody) world.removeBody(groundBody);
+  groundBody=new CANNON.Body({mass:0,shape:new CANNON.Plane()});
+  groundBody.quaternion.setFromEuler(-Math.PI/2,0,0);
+  groundBody.position.set(0,-30,0); // safety net only, well below the lowest possible dig
   world.addBody(groundBody);
 }
 
@@ -623,8 +677,10 @@ function setMode(m){
     // Align camera yaw to current player facing so it feels natural on entry
     camYaw=playerYaw+Math.PI; // camera starts behind player
     camPitch=0.18;
-    // Reset player physics above ground
-    playerBody.position.set(playerMesh.position.x,Math.max(P_H/2+0.15,playerMesh.position.y),playerMesh.position.z);
+    // Reset player physics above the ACTUAL terrain surface at this spot
+    const gH=groundHeightAt(playerMesh.position.x,playerMesh.position.z);
+    const targetY=(gH!=null?gH:playerMesh.position.y)+P_H/2+0.05;
+    playerBody.position.set(playerMesh.position.x,targetY,playerMesh.position.z);
     playerBody.velocity.set(0,0,0);
     snapPlayCamera();
   }
@@ -671,7 +727,7 @@ function setupEditInteraction(){
     if(brushMode){sculptAt(gndHit());return;}
     if(selEntry?.moving){const h=gndHit();if(h)placeAt(selEntry,h.point);}
   }
-  function onUp(){if(dragging&&brushMode)buildGroundBody();dragging=false;}
+  function onUp(){dragging=false;}
 
   canvas.addEventListener('mousedown',onDown);
   canvas.addEventListener('mousemove',onMove);
@@ -721,7 +777,6 @@ function setupEditInteraction(){
 
 function sculptAt(hit){
   if(!hit)return;
-  groundIsFlat=false;
   const pos=groundMesh.geometry.attributes.position;
   const sign=brushMode==='raise'?1:-1;
   const BR=12, BS=1.6;
@@ -877,11 +932,15 @@ function finalizeWater(center,radius){
   const geo=new THREE.CircleGeometry(radius,48); geo.rotateX(-Math.PI/2);
   const mat=new THREE.MeshStandardMaterial({color:0x1e6fa8,transparent:true,opacity:0.78,roughness:0.1,metalness:0.15});
   const mesh=new THREE.Mesh(geo,mat);
-  mesh.position.set(center.x,center.y+0.25,center.z);
+  // Settle at the LOWEST terrain point within the radius (so water placed
+  // over a dug hole actually pools inside it, instead of floating at the
+  // height of wherever the user happened to click).
+  const minH=sampleMinGroundHeight(center.x,center.z,radius);
+  mesh.position.set(center.x,minH+0.12,center.z);
   mesh.userData.radius=radius;
   scene.add(mesh);
   register(mesh,null,'water'); // no physics body — water doesn't block movement
-  setStatus('تمت إضافة بحيرة. حددها لنقلها أو رفع/خفض مستوى سطحها.');
+  setStatus('تمت إضافة بحيرة عند أدنى نقطة في المنطقة المحددة. حددها لرفع/خفض مستواها يدوياً إن أردت.');
 }
 function animateWater(){
   for(const e of placed){
@@ -1069,21 +1128,19 @@ document.getElementById('mfileinput').addEventListener('change',e=>{
 function showV(id){document.querySelectorAll('.sv').forEach(v=>v.classList.remove('vis'));document.getElementById(id).classList.add('vis');}
 document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>{
   showV(el.dataset.go);
-  if(el.dataset.go==='vphf')loadPHFloors();
+  if(el.dataset.go==='vphf')loadPHFloors('outdoor');
   if(el.dataset.go==='vacgf')loadACGFloors();
-  if(el.dataset.go==='vphn')loadPHModels('gphn','nature');
-  if(el.dataset.go==='vphu')loadPHModels('gphu','urban');
-  if(el.dataset.go==='vpha')loadPHModels('gpha',null);
+  if(el.dataset.go==='vphmodels')loadPHModels('');
   if(el.dataset.go==='vskf')sfSearch(document.getElementById('sfq').value||'house');
 }));
 document.querySelectorAll('[data-bk]').forEach(el=>el.addEventListener('click',()=>showV('vroot')));
 document.getElementById('sfsbtn').addEventListener('click',()=>sfSearch(document.getElementById('sfq').value));
 
 /* ─── Poly Haven textures ───────────────────────────────────────────── */
-async function loadPHFloors(){
+async function loadPHFloors(cat){
   const g=document.getElementById('gphf'); g.innerHTML='<div class="emsg">جاري التحميل…</div>';
   try{
-    const r=await fetch('https://api.polyhaven.com/assets?type=textures&categories=outdoor');
+    const r=await fetch(`https://api.polyhaven.com/assets?type=textures&categories=${cat||'outdoor'}`);
     const j=await r.json();
     const items=Object.entries(j).map(([id,v])=>({id,...v})).sort((a,b)=>(b.download_count||0)-(a.download_count||0)).slice(0,18);
     renderGrid(g,items,i=>i.name,i=>i.thumbnail_url,async item=>{
@@ -1094,6 +1151,7 @@ async function loadPHFloors(){
     });
   }catch(e){g.innerHTML='<div class="emsg">فشل الاتصال بـ Poly Haven.</div>';}
 }
+document.querySelectorAll('[data-phtex]').forEach(b=>b.addEventListener('click',()=>loadPHFloors(b.dataset.phtex)));
 async function phTexImg(id){
   try{
     const f=await(await fetch(`https://api.polyhaven.com/files/${id}`)).json();
@@ -1111,12 +1169,12 @@ async function phTexImg(id){
 }
 
 /* ─── Poly Haven models ─────────────────────────────────────────────── */
-async function loadPHModels(gridId,cat){
-  const g=document.getElementById(gridId); g.innerHTML='<div class="emsg">جاري التحميل…</div>';
+async function loadPHModels(cat){
+  const g=document.getElementById('gphmodels'); g.innerHTML='<div class="emsg">جاري التحميل…</div>';
   try{
     const r=await fetch(`https://api.polyhaven.com/assets?type=models${cat?'&categories='+cat:''}`);
     const j=await r.json();
-    const items=Object.entries(j).map(([id,v])=>({id,...v})).sort((a,b)=>(b.download_count||0)-(a.download_count||0)).slice(0,18);
+    const items=Object.entries(j).map(([id,v])=>({id,...v})).sort((a,b)=>(b.download_count||0)-(a.download_count||0)).slice(0,24);
     renderGrid(g,items,i=>i.name,i=>i.thumbnail_url,async item=>{
       showLoad(true);
       const url=await phModelUrl(item.id); showLoad(false); ao.classList.remove('vis');
@@ -1125,6 +1183,7 @@ async function loadPHModels(gridId,cat){
     });
   }catch(e){g.innerHTML='<div class="emsg">فشل الاتصال بـ Poly Haven.</div>';}
 }
+document.querySelectorAll('[data-phmod]').forEach(b=>b.addEventListener('click',()=>loadPHModels(b.dataset.phmod)));
 async function phModelUrl(id){
   try{const f=await(await fetch(`https://api.polyhaven.com/files/${id}`)).json();if(!f.gltf)return null;const rk=f.gltf['1k']?'1k':Object.keys(f.gltf)[0];return f.gltf[rk]?.gltf?.url||null;}catch(_){return null;}
 }
